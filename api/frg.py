@@ -1,31 +1,25 @@
 """
-FRG - Fault Report Generator
-FastAPI REST API serving causal fault isolation reports.
+FRG - Fault Report Generator v2 (Day 5)
+Adds fault injection endpoints to the REST API.
 
-Patent Claim Reference:
-  Claim 6 - REST API interface + O-RAN Non-RT RIC / SMO integration
-  Claim 1(h) - generating fault report identifying root cause NF
-
-Endpoints:
-  GET  /faults/active          - current active fault reports
-  GET  /faults/{report_id}     - specific fault report
-  GET  /graph/current          - current causal graph state
-  GET  /graph/history          - historical graph snapshots
-  GET  /nfs/status             - all NF health scores
-  POST /remediation/{nf_id}    - trigger remediation action
-  GET  /metrics                - Prometheus metrics (for causal5g-api target)
-  GET  /health                 - health check
+New endpoints (Day 5):
+  POST /faults/inject/{scenario}   - inject a fault scenario
+  POST /faults/recover/{scenario}  - recover from a fault
+  GET  /faults/scenarios           - list available scenarios
+  GET  /faults/inject/status       - current injection state
+  WS   /ws/live                    - websocket live feed
 """
 
 import asyncio
 import time
 import threading
+import json
 from datetime import datetime, timezone
 from typing import Optional
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
-from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import PlainTextResponse, HTMLResponse
 import uvicorn
 from loguru import logger
 
@@ -36,6 +30,7 @@ from telemetry.collector.nf_scraper import NFScraper
 from causal.engine.granger import TelemetryBuffer, GrangerCausalityEngine
 from causal.graph.dcgm import DynamicCausalGraphManager
 from causal.engine.rcsm import RootCauseScoringModule, FaultReport
+from faults.injector import FaultInjector
 
 
 # ── Global pipeline state ─────────────────────────────────────
@@ -46,6 +41,7 @@ class PipelineState:
         self.granger = GrangerCausalityEngine(max_lag=3, significance=0.05)
         self.dcgm = DynamicCausalGraphManager()
         self.rcsm = RootCauseScoringModule()
+        self.injector = FaultInjector()
 
         self.latest_report: Optional[FaultReport] = None
         self.report_history: list[FaultReport] = []
@@ -56,50 +52,51 @@ class PipelineState:
         self.running = False
         self.start_time = datetime.now(timezone.utc).isoformat()
 
-        # Prometheus counters
         self.total_events_ingested = 0
         self.total_analyses_run = 0
         self.total_reports_generated = 0
+
+        # WebSocket clients
+        self.ws_clients: list[WebSocket] = []
 
 
 state = PipelineState()
 
 
+async def broadcast(msg: dict):
+    """Broadcast to all connected WebSocket clients."""
+    dead = []
+    for ws in state.ws_clients:
+        try:
+            await ws.send_json(msg)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        state.ws_clients.remove(ws)
+
+
 def pipeline_loop():
-    """
-    Continuous pipeline: MTIE -> CIE -> DCGM -> RCSM
-    Runs in background thread.
-    Patent Claim 1: end-to-end causal fault isolation pipeline.
-    """
+    """Continuous MTIE -> CIE -> DCGM -> RCSM pipeline."""
     logger.info("Pipeline started")
     state.running = True
 
     while state.running:
         try:
-            # Step 1: MTIE - ingest telemetry
             events = state.scraper.scrape_all()
             state.buffer.add_events(events)
             state.cycle_count += 1
             state.total_events_ingested += len(events)
 
-            # Step 2: CIE + DCGM + RCSM - every 10 cycles once buffer ready
             if state.buffer.ready and state.cycle_count % 10 == 0:
-                logger.info(f"Running analysis cycle {state.analysis_count+1}")
-
-                # Granger causality
                 result = state.granger.analyze(state.buffer)
                 state.dcgm.update_from_granger(result)
-
-                # RCSM scoring
                 candidates = state.rcsm.score(result, state.dcgm, state.buffer)
-                report = state.rcsm.generate_report(
-                    candidates, state.buffer, result
-                )
+                report = state.rcsm.generate_report(candidates, state.buffer, result)
 
                 state.candidates = candidates
                 state.latest_report = report
                 state.report_history.append(report)
-                if len(state.report_history) > 20:
+                if len(state.report_history) > 50:
                     state.report_history.pop(0)
 
                 state.analysis_count += 1
@@ -111,8 +108,20 @@ def pipeline_loop():
                     f"Analysis {state.analysis_count} | "
                     f"root_cause={report.root_cause.nf_id} | "
                     f"score={report.root_cause.composite_score:.4f} | "
-                    f"severity={report.severity}"
+                    f"active_faults={state.injector.active_faults}"
                 )
+
+                # Broadcast to websocket clients
+                asyncio.run(broadcast({
+                    "type": "analysis",
+                    "report_id": report.report_id,
+                    "root_cause": report.root_cause.nf_id,
+                    "score": report.root_cause.composite_score,
+                    "severity": report.severity,
+                    "active_faults": state.injector.active_faults,
+                    "causal_chain": report.root_cause.causal_path,
+                    "timestamp": report.timestamp,
+                }))
 
             time.sleep(5)
 
@@ -123,26 +132,35 @@ def pipeline_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Start pipeline in background thread
     thread = threading.Thread(target=pipeline_loop, daemon=True)
     thread.start()
-    logger.info("FRG API started - pipeline running")
+    logger.info("FRG v2 API started")
     yield
     state.running = False
-    logger.info("FRG API shutting down")
 
 
-# ── FastAPI app ───────────────────────────────────────────────
 app = FastAPI(
     title="causal5g FRG — Fault Report Generator",
-    description="Patent Claim 6: REST API for 5G causal fault isolation",
-    version="1.0.0",
+    description="""
+## Patent Claim 6: REST API for 5G Causal Fault Isolation
+
+### Day 5: Fault Injection + Live Demo Loop
+
+Inject faults via REST, watch the causal graph react in real time.
+
+**Demo flow:**
+1. `GET /faults/scenarios` — see available fault scenarios
+2. `POST /faults/inject/nrf_crash` — crash NRF
+3. `GET /faults/active` — watch root cause shift
+4. `POST /faults/recover/nrf_crash` — recover
+5. `GET /faults/active` — confirm system normalizes
+""",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
 
 def report_to_dict(report: FaultReport) -> dict:
-    """Serialize FaultReport to JSON-safe dict."""
     return {
         "report_id": report.report_id,
         "timestamp": report.timestamp,
@@ -180,7 +198,9 @@ def report_to_dict(report: FaultReport) -> dict:
     }
 
 
-@app.get("/health")
+# ── Health & Status ───────────────────────────────────────────
+
+@app.get("/health", tags=["Status"])
 async def health():
     return {
         "status": "healthy",
@@ -188,29 +208,78 @@ async def health():
         "cycle_count": state.cycle_count,
         "buffer_fill_pct": round(state.buffer.fill_pct, 1),
         "analysis_count": state.analysis_count,
+        "active_faults": state.injector.active_faults,
         "uptime_since": state.start_time,
     }
 
 
-@app.get("/faults/active")
+@app.get("/nfs/status", tags=["Status"])
+async def get_nf_status():
+    nf_status = state.injector.get_nf_status()
+    scores = {}
+    for nf in ["nrf","amf","smf","pcf","udm","udr","ausf","nssf"]:
+        latency = state.buffer.get_series(nf, "http_response_latency_ms")
+        reach = state.buffer.get_series(nf, "nf_reachability")
+        scores[nf] = {
+            "container_status": nf_status.get(nf, "unknown"),
+            "reachable": reach[-1] > 0 if reach else True,
+            "latest_latency_ms": round(latency[-1], 2) if latency else None,
+            "anomaly_score": round(
+                state.dcgm.graph.nodes[nf].get("anomaly_score", 0.0), 4
+            ) if nf in state.dcgm.graph.nodes else 0.0,
+            "candidate_rank": next(
+                (c.rank for c in state.candidates if c.nf_id == nf), None
+            ),
+        }
+    return {"timestamp": datetime.now(timezone.utc).isoformat(), "nfs": scores}
+
+
+# ── Fault Reports ─────────────────────────────────────────────
+
+@app.get("/faults/active", tags=["Fault Reports"])
 async def get_active_faults():
-    """
-    Get current active fault report.
-    Patent Claim 6: GET /faults/active
-    """
     if not state.latest_report:
         return {
-            "status": "no_analysis_yet",
+            "status": "collecting",
             "buffer_fill_pct": state.buffer.fill_pct,
-            "message": f"Collecting telemetry... {state.cycle_count} cycles so far"
+            "cycle_count": state.cycle_count,
         }
     return {
         "status": "ok",
+        "active_injections": state.injector.active_faults,
         "report": report_to_dict(state.latest_report),
     }
 
 
-@app.get("/faults/{report_id}")
+@app.get("/faults", tags=["Fault Reports"])
+async def list_faults(limit: int = 10):
+    reports = state.report_history[-limit:]
+    return {
+        "total": len(state.report_history),
+        "reports": [report_to_dict(r) for r in reversed(reports)],
+    }
+
+
+# ── Fault Injection ───────────────────────────────────────────
+
+@app.get("/faults/scenarios", tags=["Fault Injection"])
+async def list_scenarios():
+    """List all available fault injection scenarios."""
+    return {
+        "scenarios": {
+            name: {
+                "target_nf": s["nf"],
+                "description": s["description"],
+                "severity": s["severity"],
+                "expected_impact": s["expected_impact"],
+                "action": s["action"],
+            }
+            for name, s in FaultInjector.SCENARIOS.items()
+        }
+    }
+
+
+@app.get("/faults/report/{report_id}", tags=["Fault Reports"])
 async def get_fault_report(report_id: str):
     """Get a specific fault report by ID."""
     for r in state.report_history:
@@ -219,33 +288,106 @@ async def get_fault_report(report_id: str):
     raise HTTPException(status_code=404, detail=f"Report {report_id} not found")
 
 
-@app.get("/faults")
-async def list_faults(limit: int = 10):
-    """List recent fault reports."""
-    reports = state.report_history[-limit:]
+@app.get("/faults/inject/status", tags=["Fault Injection"])
+async def injection_status():
+    """Current fault injection state."""
     return {
-        "total": len(state.report_history),
-        "returned": len(reports),
-        "reports": [report_to_dict(r) for r in reversed(reports)],
+        "active_faults": state.injector.active_faults,
+        "fault_log": [
+            {
+                "timestamp": e.timestamp,
+                "scenario": e.scenario,
+                "target_nf": e.target_nf,
+                "action": e.action,
+            }
+            for e in state.injector.fault_log[-20:]
+        ],
+        "nf_container_status": state.injector.get_nf_status(),
     }
 
 
-@app.get("/graph/current")
+@app.post("/faults/inject/{scenario}", tags=["Fault Injection"])
+async def inject_fault(scenario: str):
+    """
+    Inject a fault scenario into the live 5G core.
+    Patent Claim 6: POST /faults/inject/{scenario}
+
+    Available scenarios: nrf_crash, amf_crash, smf_crash, pcf_timeout, udm_crash
+    """
+    if scenario not in FaultInjector.SCENARIOS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown scenario '{scenario}'. Available: {list(FaultInjector.SCENARIOS.keys())}"
+        )
+    if scenario in state.injector.active_faults:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Scenario '{scenario}' already active"
+        )
+
+    s = FaultInjector.SCENARIOS[scenario]
+    event = state.injector.inject(scenario)
+
+    await broadcast({
+        "type": "fault_injected",
+        "scenario": scenario,
+        "target_nf": s["nf"],
+        "severity": s["severity"],
+        "expected_impact": s["expected_impact"],
+        "timestamp": event.timestamp,
+    })
+
+    return {
+        "status": "injected",
+        "scenario": scenario,
+        "target_nf": s["nf"],
+        "severity": s["severity"],
+        "description": s["description"],
+        "expected_impact": s["expected_impact"],
+        "timestamp": event.timestamp,
+        "next_analysis_in": f"{(10 - state.cycle_count % 10) * 5}s",
+        "watch": "GET /faults/active to see root cause shift",
+    }
+
+
+@app.post("/faults/recover/{scenario}", tags=["Fault Injection"])
+async def recover_fault(scenario: str):
+    """Recover from an active fault scenario."""
+    if scenario not in FaultInjector.SCENARIOS:
+        raise HTTPException(status_code=400, detail=f"Unknown scenario: {scenario}")
+
+    event = state.injector.recover(scenario)
+
+    await broadcast({
+        "type": "fault_recovered",
+        "scenario": scenario,
+        "timestamp": event.timestamp,
+    })
+
+    return {
+        "status": "recovering",
+        "scenario": scenario,
+        "timestamp": event.timestamp,
+        "watch": "GET /faults/active to confirm system normalizes",
+    }
+
+
+# ── Causal Graph ──────────────────────────────────────────────
+
+@app.get("/graph/current", tags=["Causal Graph"])
 async def get_current_graph():
-    """
-    Get current causal graph state.
-    Patent Claim 6: GET /graph/current
-    """
     graph = state.dcgm.graph
     import networkx as nx
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "active_faults": state.injector.active_faults,
         "nodes": [
             {
                 "id": n,
                 "nf_type": n.upper(),
-                "anomaly_score": graph.nodes[n].get("anomaly_score", 0.0),
+                "anomaly_score": round(graph.nodes[n].get("anomaly_score", 0.0), 4),
                 "color": state.dcgm.NF_COLORS.get(n, "#888"),
+                "container_status": state.injector.get_nf_status().get(n, "unknown"),
             }
             for n in graph.nodes
         ],
@@ -260,8 +402,8 @@ async def get_current_graph():
             for u, v, d in graph.edges(data=True)
         ],
         "stats": {
-            "node_count": graph.number_of_nodes(),
-            "edge_count": graph.number_of_edges(),
+            "nodes": graph.number_of_nodes(),
+            "edges": graph.number_of_edges(),
             "granger_edges": sum(
                 1 for _, _, d in graph.edges(data=True)
                 if d.get("source") == "granger"
@@ -270,82 +412,68 @@ async def get_current_graph():
     }
 
 
-@app.get("/nfs/status")
-async def get_nf_status():
-    """Get health scores for all NFs."""
-    scores = {}
-    for nf in ["nrf","amf","smf","pcf","udm","udr","ausf","nssf"]:
-        latency = state.buffer.get_series(nf, "http_response_latency_ms")
-        reach = state.buffer.get_series(nf, "nf_reachability")
-        scores[nf] = {
-            "reachable": reach[-1] > 0 if reach else True,
-            "latest_latency_ms": round(latency[-1], 2) if latency else None,
-            "anomaly_score": round(
-                state.dcgm.graph.nodes[nf].get("anomaly_score", 0.0), 4
-            ) if nf in state.dcgm.graph.nodes else 0.0,
-            "candidate_rank": next(
-                (c.rank for c in state.candidates if c.nf_id == nf), None
-            ),
-        }
-    return {"timestamp": datetime.now(timezone.utc).isoformat(), "nfs": scores}
+# ── Remediation ───────────────────────────────────────────────
 
-
-@app.post("/remediation/{nf_id}")
-async def trigger_remediation(nf_id: str, background_tasks: BackgroundTasks):
-    """
-    Trigger remediation for an NF.
-    Patent Claim 6: POST /remediation/{nf_id}
-    """
-    valid_nfs = ["nrf","amf","smf","pcf","udm","udr","ausf","nssf"]
-    if nf_id not in valid_nfs:
+@app.post("/remediation/{nf_id}", tags=["Remediation"])
+async def trigger_remediation(nf_id: str):
+    valid = ["nrf","amf","smf","pcf","udm","udr","ausf","nssf"]
+    if nf_id not in valid:
         raise HTTPException(status_code=400, detail=f"Unknown NF: {nf_id}")
 
-    action = f"docker restart causal5g-{nf_id}"
-    logger.warning(f"REMEDIATION triggered for {nf_id}: {action}")
+    import subprocess
+    result = subprocess.run(
+        f"docker restart causal5g-{nf_id}",
+        shell=True, capture_output=True, text=True
+    )
 
+    logger.warning(f"REMEDIATION: restarted causal5g-{nf_id}")
     return {
-        "status": "remediation_initiated",
+        "status": "restarted",
         "nf_id": nf_id,
-        "action": action,
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "recommended_action": RootCauseScoringModule.__dict__.get(
-            nf_id, f"Restart {nf_id.upper()} container"
-        ),
+        "docker_output": result.stdout.strip(),
     }
 
 
-@app.get("/metrics", response_class=PlainTextResponse)
+# ── WebSocket Live Feed ───────────────────────────────────────
+
+@app.websocket("/ws/live")
+async def websocket_live(websocket: WebSocket):
+    """WebSocket live feed of analysis results and fault events."""
+    await websocket.accept()
+    state.ws_clients.append(websocket)
+    logger.info(f"WebSocket client connected ({len(state.ws_clients)} total)")
+    try:
+        await websocket.send_json({
+            "type": "connected",
+            "message": "causal5g live feed",
+            "cycle_count": state.cycle_count,
+        })
+        while True:
+            await asyncio.sleep(1)
+    except WebSocketDisconnect:
+        state.ws_clients.remove(websocket)
+        logger.info("WebSocket client disconnected")
+
+
+# ── Prometheus Metrics ────────────────────────────────────────
+
+@app.get("/metrics", response_class=PlainTextResponse, tags=["Status"])
 async def prometheus_metrics():
-    """
-    Prometheus metrics endpoint for causal5g-api scrape target.
-    """
     lines = [
-        "# HELP causal5g_pipeline_cycles_total Total scrape cycles",
-        "# TYPE causal5g_pipeline_cycles_total counter",
         f"causal5g_pipeline_cycles_total {state.cycle_count}",
-        "# HELP causal5g_analyses_total Total Granger analyses run",
-        "# TYPE causal5g_analyses_total counter",
         f"causal5g_analyses_total {state.total_analyses_run}",
-        "# HELP causal5g_events_ingested_total Total telemetry events ingested",
-        "# TYPE causal5g_events_ingested_total counter",
         f"causal5g_events_ingested_total {state.total_events_ingested}",
-        "# HELP causal5g_buffer_fill_pct Telemetry buffer fill percentage",
-        "# TYPE causal5g_buffer_fill_pct gauge",
         f"causal5g_buffer_fill_pct {state.buffer.fill_pct:.1f}",
+        f"causal5g_active_faults {len(state.injector.active_faults)}",
     ]
     if state.latest_report:
         rc = state.latest_report.root_cause
-        lines += [
-            "# HELP causal5g_root_cause_score Current root cause composite score",
-            "# TYPE causal5g_root_cause_score gauge",
-            f'causal5g_root_cause_score{{nf="{rc.nf_id}"}} {rc.composite_score}',
-        ]
+        lines.append(f'causal5g_root_cause_score{{nf="{rc.nf_id}"}} {rc.composite_score}')
         for c in state.candidates:
-            lines.append(
-                f'causal5g_candidate_score{{nf="{c.nf_id}"}} {c.composite_score}'
-            )
+            lines.append(f'causal5g_candidate_score{{nf="{c.nf_id}"}} {c.composite_score}')
     return "\n".join(lines) + "\n"
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8080, log_level="warning")
