@@ -46,6 +46,9 @@ services:
     command: ./nrf -c ./config/nrfcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8000:8000"
+      - "9091:9091"
     volumes:
       - ./config/nrfcfg.yaml:/free5gc/config/nrfcfg.yaml
       - ./cert:/free5gc/cert
@@ -68,6 +71,9 @@ services:
     command: ./amf -c ./config/amfcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8001:8000"
+      - "9092:9091"
     volumes:
       - ./config/amfcfg.yaml:/free5gc/config/amfcfg.yaml
       - ./cert:/free5gc/cert
@@ -89,6 +95,9 @@ services:
     command: ./smf -c ./config/smfcfg.yaml -u ./config/uerouting.yaml
     expose:
       - "8000"
+    ports:
+      - "8002:8000"
+      - "9093:9091"
     volumes:
       - ./config/smfcfg.yaml:/free5gc/config/smfcfg.yaml
       - ./config/uerouting.yaml:/free5gc/config/uerouting.yaml
@@ -112,6 +121,9 @@ services:
     command: ./ausf -c ./config/ausfcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8006:8000"
+      - "9097:9091"
     volumes:
       - ./config/ausfcfg.yaml:/free5gc/config/ausfcfg.yaml
       - ./cert:/free5gc/cert
@@ -133,6 +145,9 @@ services:
     command: ./udm -c ./config/udmcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8004:8000"
+      - "9095:9091"
     volumes:
       - ./config/udmcfg.yaml:/free5gc/config/udmcfg.yaml
       - ./cert:/free5gc/cert
@@ -154,6 +169,9 @@ services:
     command: ./udr -c ./config/udrcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8005:8000"
+      - "9096:9091"
     volumes:
       - ./config/udrcfg.yaml:/free5gc/config/udrcfg.yaml
       - ./cert:/free5gc/cert
@@ -177,6 +195,9 @@ services:
     command: ./pcf -c ./config/pcfcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8003:8000"
+      - "9094:9091"
     volumes:
       - ./config/pcfcfg.yaml:/free5gc/config/pcfcfg.yaml
       - ./cert:/free5gc/cert
@@ -198,6 +219,9 @@ services:
     command: ./nssf -c ./config/nssfcfg.yaml
     expose:
       - "8000"
+    ports:
+      - "8007:8000"
+      - "9098:9091"
     volumes:
       - ./config/nssfcfg.yaml:/free5gc/config/nssfcfg.yaml
       - ./cert:/free5gc/cert
@@ -234,3 +258,6 @@ services:
       - db
     restart: unless-stopped
 
+
+  # Port exposure for MTIE telemetry scraping
+  # Added after free5gc-webui service

@@ -8,45 +8,59 @@ scrape_configs:
 
   - job_name: 'free5gc-nrf'
     static_configs:
-      - targets: ['10.100.0.10:8000']
+      - targets: ['host.docker.internal:9091']
         labels:
           nf: 'nrf'
+          nf_type: 'NRF'
 
   - job_name: 'free5gc-amf'
     static_configs:
-      - targets: ['10.100.0.11:8000']
+      - targets: ['host.docker.internal:9092']
         labels:
           nf: 'amf'
+          nf_type: 'AMF'
 
   - job_name: 'free5gc-smf'
     static_configs:
-      - targets: ['10.100.0.12:8000']
+      - targets: ['host.docker.internal:9093']
         labels:
           nf: 'smf'
-
-  - job_name: 'free5gc-upf'
-    static_configs:
-      - targets: ['10.100.0.13:8000']
-        labels:
-          nf: 'upf'
+          nf_type: 'SMF'
 
   - job_name: 'free5gc-pcf'
     static_configs:
-      - targets: ['10.100.0.14:8000']
+      - targets: ['host.docker.internal:9094']
         labels:
           nf: 'pcf'
+          nf_type: 'PCF'
 
   - job_name: 'free5gc-udm'
     static_configs:
-      - targets: ['10.100.0.15:8000']
+      - targets: ['host.docker.internal:9095']
         labels:
           nf: 'udm'
+          nf_type: 'UDM'
+
+  - job_name: 'free5gc-udr'
+    static_configs:
+      - targets: ['host.docker.internal:9096']
+        labels:
+          nf: 'udr'
+          nf_type: 'UDR'
 
   - job_name: 'free5gc-ausf'
     static_configs:
-      - targets: ['10.100.0.17:8000']
+      - targets: ['host.docker.internal:9097']
         labels:
           nf: 'ausf'
+          nf_type: 'AUSF'
+
+  - job_name: 'free5gc-nssf'
+    static_configs:
+      - targets: ['host.docker.internal:9098']
+        labels:
+          nf: 'nssf'
+          nf_type: 'NSSF'
 
   - job_name: 'causal5g-api'
     static_configs:
