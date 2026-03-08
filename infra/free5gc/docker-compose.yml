@@ -73,7 +73,7 @@ services:
       - "8000"
     ports:
       - "8001:8000"
-      - "9092:9091"
+      - "9092:9092"
     volumes:
       - ./config/amfcfg.yaml:/free5gc/config/amfcfg.yaml
       - ./cert:/free5gc/cert
@@ -97,7 +97,7 @@ services:
       - "8000"
     ports:
       - "8002:8000"
-      - "9093:9091"
+      - "9093:9093"
     volumes:
       - ./config/smfcfg.yaml:/free5gc/config/smfcfg.yaml
       - ./config/uerouting.yaml:/free5gc/config/uerouting.yaml
@@ -123,7 +123,7 @@ services:
       - "8000"
     ports:
       - "8006:8000"
-      - "9097:9091"
+      - "9097:9097"
     volumes:
       - ./config/ausfcfg.yaml:/free5gc/config/ausfcfg.yaml
       - ./cert:/free5gc/cert
@@ -147,7 +147,7 @@ services:
       - "8000"
     ports:
       - "8004:8000"
-      - "9095:9091"
+      - "9095:9095"
     volumes:
       - ./config/udmcfg.yaml:/free5gc/config/udmcfg.yaml
       - ./cert:/free5gc/cert
@@ -171,7 +171,7 @@ services:
       - "8000"
     ports:
       - "8005:8000"
-      - "9096:9091"
+      - "9096:9096"
     volumes:
       - ./config/udrcfg.yaml:/free5gc/config/udrcfg.yaml
       - ./cert:/free5gc/cert
@@ -197,7 +197,7 @@ services:
       - "8000"
     ports:
       - "8003:8000"
-      - "9094:9091"
+      - "9094:9094"
     volumes:
       - ./config/pcfcfg.yaml:/free5gc/config/pcfcfg.yaml
       - ./cert:/free5gc/cert
@@ -221,7 +221,7 @@ services:
       - "8000"
     ports:
       - "8007:8000"
-      - "9098:9091"
+      - "9098:9098"
     volumes:
       - ./config/nssfcfg.yaml:/free5gc/config/nssfcfg.yaml
       - ./cert:/free5gc/cert
