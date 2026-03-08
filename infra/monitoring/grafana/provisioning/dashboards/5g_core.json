@@ -1,0 +1,84 @@
+{
+  "title": "causal5g — 5G Core NF Health",
+  "uid": "causal5g-main",
+  "refresh": "5s",
+  "time": {"from": "now-5m", "to": "now"},
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "NRF SBI Requests",
+      "gridPos": {"x":0,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "sum(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\"})", "legendFormat": "NRF total"}],
+      "options": {"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"green","value":0},{"color":"red","value":0}]}}}
+    },
+    {
+      "id": 2, "type": "stat", "title": "AMF PDU Sessions Active",
+      "gridPos": {"x":6,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "sum(free5gc_amf_business_active_pdu_session_current_count)", "legendFormat": "PDU Sessions"}],
+      "options": {"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"blue","value":0}]}}}
+    },
+    {
+      "id": 3, "type": "stat", "title": "NRF OAuth2 Tokens",
+      "gridPos": {"x":12,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "sum(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\",path=\"/oauth2/token\"})", "legendFormat": "OAuth2"}],
+      "options": {"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"purple","value":0}]}}}
+    },
+    {
+      "id": 4, "type": "stat", "title": "NF Registrations",
+      "gridPos": {"x":18,"y":0,"w":6,"h":4},
+      "targets": [{"expr": "sum(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\",path=~\"/nnrf-nfm.*\",method=\"PUT\"})", "legendFormat": "Registrations"}],
+      "options": {"colorMode":"background"},
+      "fieldConfig": {"defaults":{"color":{"mode":"thresholds"},"thresholds":{"steps":[{"color":"orange","value":0}]}}}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "SBI Request Rate — All NFs",
+      "gridPos": {"x":0,"y":4,"w":24,"h":8},
+      "targets": [
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\"}[30s])", "legendFormat": "NRF"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-amf\"}[30s])", "legendFormat": "AMF"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-smf\"}[30s])", "legendFormat": "SMF"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-pcf\"}[30s])", "legendFormat": "PCF"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-udm\"}[30s])", "legendFormat": "UDM"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-ausf\"}[30s])", "legendFormat": "AUSF"}
+      ],
+      "fieldConfig": {"defaults":{"custom":{"lineWidth":2}}}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "SBI P99 Latency — All NFs (ms)",
+      "gridPos": {"x":0,"y":12,"w":12,"h":8},
+      "targets": [
+        {"expr": "histogram_quantile(0.99, rate(free5gc_sbi_inbound_request_duration_seconds_bucket{job=\"free5gc-nrf\"}[30s])) * 1000", "legendFormat": "NRF p99"},
+        {"expr": "histogram_quantile(0.99, rate(free5gc_sbi_inbound_request_duration_seconds_bucket{job=\"free5gc-amf\"}[30s])) * 1000", "legendFormat": "AMF p99"},
+        {"expr": "histogram_quantile(0.99, rate(free5gc_sbi_inbound_request_duration_seconds_bucket{job=\"free5gc-smf\"}[30s])) * 1000", "legendFormat": "SMF p99"}
+      ]
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "NRF — Request Status Breakdown",
+      "gridPos": {"x":12,"y":12,"w":12,"h":8},
+      "targets": [
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\",status_code=~\"2.*\"}[30s])", "legendFormat": "2xx Success"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\",status_code=~\"4.*\"}[30s])", "legendFormat": "4xx Client Error"},
+        {"expr": "rate(free5gc_sbi_inbound_request_duration_seconds_count{job=\"free5gc-nrf\",status_code=~\"5.*\"}[30s])", "legendFormat": "5xx Server Error"}
+      ]
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "AMF — Business Metrics",
+      "gridPos": {"x":0,"y":20,"w":12,"h":8},
+      "targets": [
+        {"expr": "free5gc_amf_business_active_pdu_session_current_count", "legendFormat": "Active PDU Sessions {{access_type}}"},
+        {"expr": "free5gc_amf_business_handover_current_count", "legendFormat": "Handovers in Progress"}
+      ]
+    },
+    {
+      "id": 9, "type": "timeseries", "title": "NF Reachability (1=up, 0=down)",
+      "gridPos": {"x":12,"y":20,"w":12,"h":8},
+      "targets": [
+        {"expr": "up{job=~\"free5gc-.*\"}", "legendFormat": "{{job}}"}
+      ],
+      "fieldConfig": {"defaults":{"min":0,"max":1,"custom":{"lineWidth":2},"thresholds":{"steps":[{"color":"red","value":0},{"color":"green","value":1}]}}}
+    }
+  ],
+  "schemaVersion": 38
+}
