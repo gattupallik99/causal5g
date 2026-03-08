@@ -1,0 +1,99 @@
+version: '3.8'
+
+name: causal5g-monitoring
+
+networks:
+  causal5g-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.100.0.0/24
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  loki_data:
+
+services:
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: causal5g-prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    ports:
+      - "9090:9090"
+    networks:
+      causal5g-net:
+        ipv4_address: 10.100.0.30
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: causal5g-grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=causal5g
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+    networks:
+      causal5g-net:
+        ipv4_address: 10.100.0.31
+    depends_on:
+      - prometheus
+      - loki
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: causal5g-loki
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    networks:
+      causal5g-net:
+        ipv4_address: 10.100.0.32
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: causal5g-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      causal5g-net:
+        ipv4_address: 10.100.0.33
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.100.0
+    container_name: causal5g-otel
+    volumes:
+      - ./otel-collector.yml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "8888:8888"
+      - "8889:8889"
+    networks:
+      causal5g-net:
+        ipv4_address: 10.100.0.34
+    depends_on:
+      - jaeger
+      - loki
+    restart: unless-stopped
+

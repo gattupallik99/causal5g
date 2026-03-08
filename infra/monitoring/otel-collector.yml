@@ -16,8 +16,8 @@ processors:
         value: causal5g
 
 exporters:
-  jaeger:
-    endpoint: jaeger:14250
+  otlp/jaeger:
+    endpoint: jaeger:4317
     tls:
       insecure: true
   loki:
@@ -33,7 +33,7 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch, resource]
-      exporters: [jaeger]
+      exporters: [otlp/jaeger]
     logs:
       receivers: [otlp]
       processors: [batch, resource]
