@@ -30,3 +30,4 @@ data/
 *.csv
 *.parquet
 *.pcap
+infra/free5gc/cert/
