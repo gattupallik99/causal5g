@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>causal5g — Live Patent Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --panel: #0d1117;
+    --border: #1a2332;
+    --accent: #00d4ff;
+    --accent2: #ff4d6d;
+    --accent3: #39ff14;
+    --warn: #ffb700;
+    --text: #c9d1d9;
+    --muted: #4a5568;
+    --font-mono: 'Space Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { position: relative; z-index: 1; padding: 20px; max-width: 1400px; margin: 0 auto; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    background: rgba(13,17,23,0.8);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  .logo span { color: var(--accent2); }
+
+  .header-meta {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent3);
+    display: inline-block;
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+  }
+
+  .pulse-dot.red { background: var(--accent2); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  /* Grid layout */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 16px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+
+  .panel.red::before { background: linear-gradient(90deg, var(--accent2), transparent); }
+  .panel.green::before { background: linear-gradient(90deg, var(--accent3), transparent); }
+  .panel.warn::before { background: linear-gradient(90deg, var(--warn), transparent); }
+
+  .panel-title {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* Span columns */
+  .span2 { grid-column: span 2; }
+  .span3 { grid-column: span 3; }
+
+  /* Root cause display */
+  .rc-main {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .rc-nf {
+    font-family: var(--font-mono);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    transition: color 0.5s;
+  }
+
+  .rc-nf.critical { color: var(--accent2); animation: flash 0.5s ease; }
+
+  @keyframes flash {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .rc-score {
+    font-family: var(--font-mono);
+    font-size: 24px;
+    color: var(--muted);
+  }
+
+  .severity-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-bottom: 12px;
+  }
+
+  .severity-CRITICAL { background: rgba(255,77,109,0.15); color: var(--accent2); border: 1px solid var(--accent2); }
+  .severity-HIGH     { background: rgba(255,183,0,0.15);  color: var(--warn);    border: 1px solid var(--warn); }
+  .severity-MEDIUM   { background: rgba(0,212,255,0.15);  color: var(--accent);  border: 1px solid var(--accent); }
+  .severity-LOW      { background: rgba(57,255,20,0.15);  color: var(--accent3); border: 1px solid var(--accent3); }
+
+  .evidence-list {
+    list-style: none;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  .evidence-list li::before { content: '→ '; color: var(--accent); }
+
+  /* Candidate bars */
+  .candidate {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .candidate-rank {
+    color: var(--muted);
+    width: 20px;
+    text-align: right;
+    font-size: 10px;
+  }
+
+  .candidate-nf {
+    width: 40px;
+    color: var(--text);
+    font-size: 11px;
+  }
+
+  .candidate-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+
+  .candidate-bar {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .candidate-bar.rank1 { background: var(--accent2); }
+  .candidate-bar.rank2 { background: var(--warn); }
+
+  .candidate-score {
+    width: 45px;
+    text-align: right;
+    color: var(--muted);
+    font-size: 10px;
+  }
+
+  /* Causal chain */
+  .chain {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .chain-nf {
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    background: rgba(255,255,255,0.02);
+    transition: all 0.3s;
+  }
+
+  .chain-nf.root {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(255,77,109,0.08);
+  }
+
+  .chain-arrow { color: var(--muted); font-size: 10px; }
+
+  /* NF status grid */
+  .nf-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .nf-card {
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 12px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .nf-card.up { border-color: rgba(57,255,20,0.2); }
+  .nf-card.down { border-color: var(--accent2); background: rgba(255,77,109,0.05); animation: fault-pulse 1s infinite; }
+
+  @keyframes fault-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,77,109,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(255,77,109,0); }
+  }
+
+  .nf-name {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+
+  .nf-status {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+  }
+
+  .nf-status.running { color: var(--accent3); }
+  .nf-status.stopped { color: var(--accent2); }
+
+  .nf-score {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: var(--font-mono);
+  }
+
+  .nf-rank {
+    position: absolute;
+    top: 4px; right: 6px;
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: var(--muted);
+  }
+
+  .nf-rank.rank1 { color: var(--accent2); }
+
+  /* Fault injection panel */
+  .scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .scenario-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+
+  .scenario-btn:hover {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(255,77,109,0.05);
+  }
+
+  .scenario-btn.active {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(255,77,109,0.1);
+    animation: fault-pulse 1s infinite;
+  }
+
+  .scenario-btn .sev {
+    display: block;
+    font-size: 8px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .scenario-btn.active .sev { color: var(--accent2); }
+
+  .recover-btn {
+    background: transparent;
+    border: 1px solid var(--accent3);
+    color: var(--accent3);
+    padding: 8px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-top: 10px;
+    width: 100%;
+    transition: all 0.2s;
+  }
+
+  .recover-btn:hover { background: rgba(57,255,20,0.08); }
+  .recover-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Stats row */
+  .stat-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    font-family: var(--font-mono);
+  }
+
+  .stat-val {
+    font-size: 28px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-top: 2px;
+  }
+
+  /* Log feed */
+  .log-feed {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.8;
+    max-height: 140px;
+    overflow-y: auto;
+    color: var(--muted);
+  }
+
+  .log-feed::-webkit-scrollbar { width: 3px; }
+  .log-feed::-webkit-scrollbar-track { background: transparent; }
+  .log-feed::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .log-entry { border-bottom: 1px solid rgba(255,255,255,0.03); padding: 2px 0; }
+  .log-entry.fault { color: var(--accent2); }
+  .log-entry.recover { color: var(--accent3); }
+  .log-entry.analysis { color: var(--text); }
+
+  .log-ts { color: var(--muted); margin-right: 8px; }
+
+  /* Fault active banner */
+  .fault-banner {
+    display: none;
+    background: rgba(255,77,109,0.08);
+    border: 1px solid var(--accent2);
+    border-radius: 3px;
+    padding: 10px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent2);
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    animation: fault-pulse 1s infinite;
+  }
+
+  .fault-banner.visible { display: flex; align-items: center; gap: 10px; }
+
+  /* Score components breakdown */
+  .score-breakdown {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .score-comp {
+    text-align: center;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+
+  .score-comp-val {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    color: var(--accent);
+  }
+
+  .score-comp-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-top: 2px;
+    font-family: var(--font-mono);
+  }
+
+  /* Loading state */
+  .loading {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .spinner {
+    width: 12px; height: 12px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .report-id {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">causal<span>5g</span></div>
+  <div class="header-meta">
+    <span><span class="pulse-dot" id="pipeline-dot"></span><span id="pipeline-status">CONNECTING</span></span>
+    <span>CYCLES: <span id="cycle-count" style="color:var(--accent)">—</span></span>
+    <span>ANALYSES: <span id="analysis-count" style="color:var(--accent)">—</span></span>
+    <span>BUFFER: <span id="buffer-fill" style="color:var(--accent)">—</span>%</span>
+    <span style="color:var(--muted)">US PROVISIONAL PATENT FILED MAR 2026</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Fault active banner -->
+  <div class="fault-banner" id="fault-banner">
+    <span class="pulse-dot red"></span>
+    <span id="fault-banner-text">FAULT ACTIVE</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- Root Cause Panel -->
+    <div class="panel red">
+      <div class="panel-title">ROOT CAUSE — PATENT CLAIM 1(G)</div>
+      <div id="rc-loading" class="loading"><div class="spinner"></div> Collecting telemetry...</div>
+      <div id="rc-content" style="display:none">
+        <div class="rc-main">
+          <div class="rc-nf" id="rc-nf">—</div>
+          <div class="rc-score" id="rc-score">0.000</div>
+        </div>
+        <div id="rc-severity" class="severity-badge">—</div>
+        <div class="score-breakdown">
+          <div class="score-comp">
+            <div class="score-comp-val" id="rc-centrality">—</div>
+            <div class="score-comp-label">CENTRALITY</div>
+          </div>
+          <div class="score-comp">
+            <div class="score-comp-val" id="rc-temporal">—</div>
+            <div class="score-comp-label">TEMPORAL</div>
+          </div>
+          <div class="score-comp">
+            <div class="score-comp-val" id="rc-bayesian">—</div>
+            <div class="score-comp-label">BAYESIAN</div>
+          </div>
+        </div>
+        <ul class="evidence-list" id="rc-evidence" style="margin-top:12px"></ul>
+        <div class="report-id" id="report-id"></div>
+      </div>
+    </div>
+
+    <!-- Candidate Rankings -->
+    <div class="panel">
+      <div class="panel-title">CANDIDATE RANKING — PATENT CLAIM 4</div>
+      <div id="candidates-content"></div>
+    </div>
+
+    <!-- Causal Chain -->
+    <div class="panel">
+      <div class="panel-title">CAUSAL CHAIN — PATENT CLAIM 1(E)</div>
+      <div class="chain" id="causal-chain">
+        <span style="color:var(--muted);font-family:var(--font-mono);font-size:12px">Awaiting analysis...</span>
+      </div>
+      <div style="margin-top:20px">
+        <div class="panel-title">FAULT CATEGORY — 3GPP TS 32.111</div>
+        <div id="fault-category" style="font-size:13px;color:var(--text);line-height:1.5">—</div>
+        <div style="margin-top:10px">
+          <div class="panel-title">RECOMMENDED ACTION</div>
+          <div id="rec-action" style="font-size:12px;color:var(--muted);line-height:1.6">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NF Status Grid -->
+    <div class="panel span2">
+      <div class="panel-title">NF HEALTH — ALL 8 NETWORK FUNCTIONS</div>
+      <div class="nf-grid" id="nf-grid"></div>
+    </div>
+
+    <!-- Pipeline Stats -->
+    <div class="panel green">
+      <div class="panel-title">PIPELINE — MTIE→CIE→DCGM→RCSM→FRG</div>
+      <div class="stat-row" id="stats-row">
+        <div class="stat">
+          <div class="stat-val" id="stat-events">—</div>
+          <div class="stat-label">EVENTS/MIN</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="stat-links">—</div>
+          <div class="stat-label">CAUSAL LINKS</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="stat-nodes">—</div>
+          <div class="stat-label">GRAPH NODES</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" id="stat-edges">—</div>
+          <div class="stat-label">GRAPH EDGES</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Fault Injection Panel -->
+    <div class="panel red span2">
+      <div class="panel-title">FAULT INJECTION — PATENT CLAIM 6</div>
+      <div class="scenario-grid" id="scenario-grid"></div>
+      <button class="recover-btn" id="recover-btn" disabled onclick="recoverAll()">
+        ⟳ RECOVER ALL FAULTS
+      </button>
+    </div>
+
+    <!-- Log Feed -->
+    <div class="panel">
+      <div class="panel-title">LIVE EVENT LOG</div>
+      <div class="log-feed" id="log-feed"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:8080';
+let activeFaults = [];
+let scenarios = {};
+let logEntries = [];
+
+function addLog(msg, type='analysis') {
+  const ts = new Date().toLocaleTimeString('en-US', {hour12:false});
+  logEntries.unshift({ts, msg, type});
+  if (logEntries.length > 50) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const feed = document.getElementById('log-feed');
+  feed.innerHTML = logEntries.map(e =>
+    `<div class="log-entry ${e.type}">
+      <span class="log-ts">${e.ts}</span>${e.msg}
+    </div>`
+  ).join('');
+}
+
+async function loadScenarios() {
+  try {
+    const r = await fetch(`${API}/faults/scenarios`);
+    const d = await r.json();
+    scenarios = d.scenarios;
+    renderScenarios();
+  } catch(e) { console.error(e); }
+}
+
+function renderScenarios() {
+  const grid = document.getElementById('scenario-grid');
+  grid.innerHTML = Object.entries(scenarios).map(([name, s]) => `
+    <button class="scenario-btn ${activeFaults.includes(name)?'active':''}"
+      onclick="injectFault('${name}')"
+      id="btn-${name}">
+      ${s.target_nf.toUpperCase()}_CRASH
+      <span class="sev">${s.severity}</span>
+    </button>
+  `).join('');
+}
+
+async function injectFault(scenario) {
+  if (activeFaults.includes(scenario)) return;
+  try {
+    const r = await fetch(`${API}/faults/inject/${scenario}`, {method:'POST'});
+    const d = await r.json();
+    addLog(`FAULT INJECTED: ${scenario} → ${d.target_nf.toUpperCase()} stopped`, 'fault');
+    document.getElementById('recover-btn').disabled = false;
+  } catch(e) { addLog(`Inject failed: ${e.message}`, 'fault'); }
+}
+
+async function recoverAll() {
+  for (const scenario of [...activeFaults]) {
+    try {
+      await fetch(`${API}/faults/recover/${scenario}`, {method:'POST'});
+      addLog(`RECOVERY: ${scenario}`, 'recover');
+    } catch(e) {}
+  }
+  document.getElementById('recover-btn').disabled = true;
+}
+
+async function updateHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    document.getElementById('cycle-count').textContent = d.cycle_count;
+    document.getElementById('analysis-count').textContent = d.analysis_count;
+    document.getElementById('buffer-fill').textContent = d.buffer_fill_pct.toFixed(1);
+    activeFaults = d.active_faults || [];
+
+    const dot = document.getElementById('pipeline-dot');
+    const status = document.getElementById('pipeline-status');
+    if (d.pipeline_running) {
+      dot.style.background = 'var(--accent3)';
+      status.textContent = 'PIPELINE LIVE';
+    }
+
+    // Fault banner
+    const banner = document.getElementById('fault-banner');
+    if (activeFaults.length > 0) {
+      banner.classList.add('visible');
+      document.getElementById('fault-banner-text').textContent =
+        `FAULT ACTIVE: ${activeFaults.join(', ').toUpperCase()}`;
+      document.getElementById('recover-btn').disabled = false;
+    } else {
+      banner.classList.remove('visible');
+    }
+
+    renderScenarios();
+  } catch(e) {
+    document.getElementById('pipeline-status').textContent = 'DISCONNECTED';
+    document.getElementById('pipeline-dot').style.background = 'var(--accent2)';
+  }
+}
+
+async function updateFaultReport() {
+  try {
+    const r = await fetch(`${API}/faults/active`);
+    const d = await r.json();
+    if (d.status !== 'ok') return;
+
+    const report = d.report;
+    const rc = report.root_cause;
+
+    document.getElementById('rc-loading').style.display = 'none';
+    document.getElementById('rc-content').style.display = 'block';
+
+    const nfEl = document.getElementById('rc-nf');
+    if (nfEl.textContent !== rc.nf_id.toUpperCase()) {
+      nfEl.textContent = rc.nf_id.toUpperCase();
+      nfEl.classList.add('critical');
+      setTimeout(() => nfEl.classList.remove('critical'), 600);
+      addLog(`Root cause updated: ${rc.nf_id.toUpperCase()} score=${rc.composite_score.toFixed(4)}`, 'analysis');
+    }
+
+    document.getElementById('rc-score').textContent = rc.composite_score.toFixed(4);
+    document.getElementById('rc-centrality').textContent = rc.centrality_score.toFixed(3);
+    document.getElementById('rc-temporal').textContent = rc.temporal_score.toFixed(3);
+    document.getElementById('rc-bayesian').textContent = rc.bayesian_score.toFixed(3);
+
+    const sevEl = document.getElementById('rc-severity');
+    sevEl.textContent = report.severity;
+    sevEl.className = `severity-badge severity-${report.severity}`;
+
+    document.getElementById('rc-evidence').innerHTML = rc.evidence.map(e =>
+      `<li>${e}</li>`).join('');
+    document.getElementById('report-id').textContent = report.report_id;
+    document.getElementById('fault-category').textContent = report.fault_category;
+    document.getElementById('rec-action').textContent = report.recommended_action;
+
+    // Causal chain
+    const chain = document.getElementById('causal-chain');
+    chain.innerHTML = report.causal_chain.map((nf, i) =>
+      `${i>0?'<span class="chain-arrow">→</span>':''}
+       <span class="chain-nf ${i===0?'root':''}">${nf.toUpperCase()}</span>`
+    ).join('');
+
+    // Candidates
+    const maxScore = report.all_candidates[0].composite_score;
+    document.getElementById('candidates-content').innerHTML =
+      report.all_candidates.map(c => `
+        <div class="candidate">
+          <span class="candidate-rank">#${c.rank}</span>
+          <span class="candidate-nf">${c.nf_id.toUpperCase()}</span>
+          <div class="candidate-bar-wrap">
+            <div class="candidate-bar ${c.rank<=2?'rank'+c.rank:''}"
+              style="width:${(c.composite_score/maxScore*100).toFixed(1)}%"></div>
+          </div>
+          <span class="candidate-score">${c.composite_score.toFixed(4)}</span>
+        </div>
+      `).join('');
+
+  } catch(e) {}
+}
+
+async function updateNFStatus() {
+  try {
+    const r = await fetch(`${API}/nfs/status`);
+    const d = await r.json();
+    const grid = document.getElementById('nf-grid');
+    grid.innerHTML = Object.entries(d.nfs).map(([nf, s]) => `
+      <div class="nf-card ${s.container_status==='running'?'up':'down'}">
+        <div class="nf-rank ${s.candidate_rank===1?'rank1':''}">#${s.candidate_rank||'?'}</div>
+        <div class="nf-name">${nf.toUpperCase()}</div>
+        <div class="nf-status ${s.container_status==='running'?'running':'stopped'}">
+          ${s.container_status.toUpperCase()}
+        </div>
+        <div class="nf-score">${s.anomaly_score.toFixed(4)}</div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+async function updateGraph() {
+  try {
+    const r = await fetch(`${API}/graph/current`);
+    const d = await r.json();
+    document.getElementById('stat-nodes').textContent = d.stats.nodes;
+    document.getElementById('stat-edges').textContent = d.stats.edges;
+    document.getElementById('stat-links').textContent = d.stats.granger_edges;
+    document.getElementById('stat-events').textContent =
+      (d.stats.nodes * 18).toString(); // ~18 events/NF/cycle * 6 cycles/min
+  } catch(e) {}
+}
+
+async function tick() {
+  await updateHealth();
+  await updateFaultReport();
+  await updateNFStatus();
+  await updateGraph();
+}
+
+// Init
+loadScenarios();
+addLog('causal5g dashboard initialized', 'analysis');
+addLog('Connecting to FRG API at localhost:8080...', 'analysis');
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>

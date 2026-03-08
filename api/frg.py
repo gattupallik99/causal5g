@@ -19,6 +19,8 @@ from typing import Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.responses import PlainTextResponse, HTMLResponse
 import uvicorn
 from loguru import logger
@@ -158,6 +160,11 @@ Inject faults via REST, watch the causal graph react in real time.
     version="2.0.0",
     lifespan=lifespan,
 )
+app.mount("/static", StaticFiles(directory="docs"), name="static")
+
+@app.get("/demo", include_in_schema=False)
+async def demo():
+    return FileResponse("docs/causal5g_demo.html")
 
 
 def report_to_dict(report: FaultReport) -> dict:
