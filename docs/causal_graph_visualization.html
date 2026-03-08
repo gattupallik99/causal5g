@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>causal5g — Dynamic Causal Graph</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a14; color: #ddd; font-family: monospace; display: flex; flex-direction: column; height: 100vh; }
+  #header { background: #111827; padding: 10px 16px; border-bottom: 1px solid #1f2937; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  #header h1 { font-size: 13px; color: #4ECDC4; }
+  #header p  { font-size: 9px; color: #4b5563; }
+  #filters { margin-left: auto; display: flex; gap: 6px; }
+  #filters button { padding: 3px 12px; font-size: 10px; border-radius: 4px; border: none; cursor: pointer; background: #1f2937; color: #9ca3af; font-family: monospace; }
+  #filters button.active { background: #4ECDC4; color: #0a0a14; }
+  #legend { font-size: 9px; color: #374151; line-height: 1.6; }
+  #legend span.g { color: #4ECDC4; }
+  #main { display: flex; flex: 1; min-height: 0; }
+  #canvas { flex: 1; }
+  svg { width: 100%; height: 100%; }
+  #panel { width: 230px; background: #0d1117; border-left: 1px solid #1f2937; padding: 12px; overflow-y: auto; font-size: 11px; }
+  .section-title { color: #4b5563; font-size: 9px; letter-spacing: 1px; margin-bottom: 8px; }
+  .rank-row { display: flex; align-items: center; gap: 6px; padding: 5px 6px; margin-bottom: 2px; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
+  .rank-row:hover { background: #1a1a2a; }
+  .rank-row.selected { background: #1a2a1a; border-color: #2a4a2a; }
+  .bar-bg { width: 40px; background: #1f2937; border-radius: 2px; height: 5px; }
+  .bar-fill { height: 5px; border-radius: 2px; }
+  #detail { margin-top: 14px; border-top: 1px solid #1f2937; padding-top: 12px; display: none; }
+  #detail h2 { font-size: 12px; color: #4ECDC4; margin-bottom: 6px; }
+  #detail .desc { font-size: 9px; color: #6b7280; margin-bottom: 6px; }
+  #detail .score { font-size: 9px; color: #FF6B6B; margin-bottom: 10px; }
+  #detail .edge-list { font-size: 9px; line-height: 2; }
+  #detail .caused-by { color: #4ECDC4; }
+  #detail .causes { color: #FFEAA7; }
+  #edge-detail { margin-top: 14px; border-top: 1px solid #1f2937; padding-top: 12px; display: none; }
+  #edge-detail h2 { font-size: 12px; color: #4ECDC4; margin-bottom: 8px; }
+  #edge-detail .prop { font-size: 9px; color: #9ca3af; line-height: 2; }
+  #stats { margin-top: 14px; border-top: 1px solid #1f2937; padding-top: 10px; font-size: 8px; color: #374151; line-height: 1.8; }
+  .node-circle { cursor: pointer; }
+  .edge-path { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>⬡ causal5g — Dynamic Causal Graph G=(V,E)</h1>
+    <p>Patent Claim 1(e) · Granger CIE · 8 NFs · 16 discovered + 5 prior edges · Live Free5GC v4.2.0</p>
+  </div>
+  <div id="filters">
+    <button class="active" onclick="setFilter('all')">all</button>
+    <button onclick="setFilter('granger')">granger</button>
+    <button onclick="setFilter('prior')">prior</button>
+  </div>
+  <div id="legend">
+    <span class="g">━━ Granger (p&lt;0.05)</span>&nbsp;&nbsp;
+    <span>╌╌ 3GPP prior</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="canvas">
+    <svg id="svg" viewBox="0 0 800 500">
+      <defs>
+        <marker id="arr-g" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#4ECDC4" opacity="0.9"/>
+        </marker>
+        <marker id="arr-p" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L6,3 z" fill="#555"/>
+        </marker>
+      </defs>
+      <g id="edges-layer"></g>
+      <g id="nodes-layer"></g>
+    </svg>
+  </div>
+  <div id="panel">
+    <div class="section-title">ROOT CAUSE RANKING</div>
+    <div id="ranking"></div>
+    <div id="detail">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span id="det-dot" style="width:11px;height:11px;border-radius:50%;display:inline-block;"></span>
+        <h2 id="det-name"></h2>
+      </div>
+      <div class="desc" id="det-desc"></div>
+      <div class="score" id="det-score"></div>
+      <div class="edge-list" id="det-edges"></div>
+    </div>
+    <div id="edge-detail">
+      <div class="section-title">EDGE DETAIL</div>
+      <h2 id="ed-name"></h2>
+      <div class="prop" id="ed-props"></div>
+    </div>
+    <div id="stats">
+      <div>nodes: 8 NFs</div>
+      <div>granger edges: 16</div>
+      <div>prior edges: 5</div>
+      <div>window: 20 cycles × 5s</div>
+      <div>pairs tested: 2352</div>
+      <div style="margin-top:4px;color:#1f4020;">Free5GC v4.2.0 live</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const NODES = [
+  { id:"nrf",  label:"NRF",  x:400, y:80,  score:0.4000, color:"#FF6B6B", desc:"Network Repository Function" },
+  { id:"amf",  label:"AMF",  x:170, y:220, score:0.2071, color:"#4ECDC4", desc:"Access & Mobility Management" },
+  { id:"smf",  label:"SMF",  x:400, y:220, score:0.1429, color:"#45B7D1", desc:"Session Management" },
+  { id:"ausf", label:"AUSF", x:630, y:220, score:0.2857, color:"#98D8C8", desc:"Authentication Server" },
+  { id:"pcf",  label:"PCF",  x:90,  y:390, score:0.1857, color:"#96CEB4", desc:"Policy Control" },
+  { id:"udm",  label:"UDM",  x:310, y:390, score:0.1857, color:"#FFEAA7", desc:"Unified Data Management" },
+  { id:"udr",  label:"UDR",  x:520, y:390, score:0.1143, color:"#DDA0DD", desc:"Unified Data Repository" },
+  { id:"nssf", label:"NSSF", x:710, y:390, score:0.1143, color:"#F7DC6F", desc:"Network Slice Selection" },
+];
+
+const EDGES = [
+  { src:"udr",  dst:"udm",  weight:0.998, p:0.0017, lag:2, type:"granger" },
+  { src:"nssf", dst:"nrf",  weight:0.994, p:0.0060, lag:1, type:"granger" },
+  { src:"pcf",  dst:"udm",  weight:0.984, p:0.0159, lag:5, type:"granger" },
+  { src:"pcf",  dst:"ausf", weight:0.978, p:0.0224, lag:5, type:"granger" },
+  { src:"nssf", dst:"udm",  weight:0.974, p:0.0256, lag:3, type:"granger" },
+  { src:"udr",  dst:"ausf", weight:0.972, p:0.0277, lag:5, type:"granger" },
+  { src:"pcf",  dst:"nssf", weight:0.963, p:0.0367, lag:1, type:"granger" },
+  { src:"amf",  dst:"udm",  weight:0.959, p:0.0409, lag:2, type:"granger" },
+  { src:"ausf", dst:"nrf",  weight:0.959, p:0.0413, lag:1, type:"granger" },
+  { src:"ausf", dst:"pcf",  weight:0.959, p:0.0415, lag:5, type:"granger" },
+  { src:"ausf", dst:"amf",  weight:0.958, p:0.0416, lag:2, type:"granger" },
+  { src:"udm",  dst:"udr",  weight:0.560, p:0.0058, lag:4, type:"granger" },
+  { src:"nrf",  dst:"nssf", weight:0.559, p:0.0067, lag:1, type:"granger" },
+  { src:"nrf",  dst:"ausf", weight:0.557, p:0.0128, lag:1, type:"granger" },
+  { src:"nrf",  dst:"udm",  weight:0.552, p:0.0237, lag:3, type:"granger" },
+  { src:"smf",  dst:"udm",  weight:0.503, p:0.0120, lag:5, type:"granger" },
+  { src:"nrf",  dst:"amf",  weight:0.270, p:null, lag:null, type:"prior" },
+  { src:"nrf",  dst:"smf",  weight:0.270, p:null, lag:null, type:"prior" },
+  { src:"nrf",  dst:"pcf",  weight:0.270, p:null, lag:null, type:"prior" },
+  { src:"amf",  dst:"smf",  weight:0.240, p:null, lag:null, type:"prior" },
+  { src:"udm",  dst:"ausf", weight:0.240, p:null, lag:null, type:"prior" },
+];
+
+let selNode = null, selEdge = null, curFilter = "all";
+
+function getNode(id) { return NODES.find(n => n.id === id); }
+
+function ns(tag, attrs={}) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k,v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function drawEdges() {
+  const layer = document.getElementById("edges-layer");
+  layer.innerHTML = "";
+  EDGES.forEach((e, i) => {
+    if (curFilter !== "all" && e.type !== curFilter) return;
+    const src = getNode(e.src), dst = getNode(e.dst);
+    const dx = dst.x-src.x, dy = dst.y-src.y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const r = 28;
+    const x1 = src.x+(dx/len)*r, y1 = src.y+(dy/len)*r;
+    const x2 = dst.x-(dx/len)*(r+8), y2 = dst.y-(dy/len)*(r+8);
+    const mx = (x1+x2)/2 - dy*0.18, my = (y1+y2)/2 + dx*0.18;
+    const isG = e.type === "granger";
+    const isSel = selEdge === i;
+    const hue = Math.round(e.weight*120);
+    const color = isSel ? "#ffffff" : (isG ? `hsl(${hue},80%,60%)` : "#444");
+    const sw = isSel ? 3 : (isG ? Math.max(1.5, e.weight*3) : 1);
+    const opacity = isSel ? 1 : (isG ? 0.7 : 0.25);
+
+    const g = ns("g"); g.style.cursor = "pointer";
+    const path = ns("path", {
+      d: `M${x1},${y1} Q${mx},${my} ${x2},${y2}`,
+      fill: "none", stroke: color,
+      "stroke-width": sw, opacity,
+      "stroke-dasharray": isG ? "none" : "4,3",
+      "marker-end": `url(#arr-${isG?"g":"p"})`
+    });
+    g.appendChild(path);
+
+    if (isG) {
+      const t = ns("text", { x: mx, y: my-7, "text-anchor":"middle", "font-size":"8", fill: color, opacity: isSel?1:0.6 });
+      t.textContent = `p=${e.p.toFixed(3)}`;
+      g.appendChild(t);
+    }
+
+    g.addEventListener("click", () => {
+      selEdge = selEdge === i ? null : i;
+      selNode = null;
+      render();
+    });
+    layer.appendChild(g);
+  });
+}
+
+function drawNodes() {
+  const layer = document.getElementById("nodes-layer");
+  layer.innerHTML = "";
+  NODES.forEach(n => {
+    const isSel = selNode === n.id;
+    const g = ns("g"); g.style.cursor = "pointer";
+    g.setAttribute("transform", `translate(${n.x},${n.y})`);
+
+    if (isSel) {
+      g.appendChild(ns("circle", { r:36, fill:n.color, opacity:0.2 }));
+    }
+    g.appendChild(ns("circle", { r:28, fill:n.color, stroke: isSel?"#fff":"#1a1a2e", "stroke-width": isSel?3:1.5 }));
+
+    // score bar bg
+    const bgRect = ns("rect", { x:-12, y:30, width:24, height:5, rx:2, fill:"#111", opacity:0.6 });
+    g.appendChild(bgRect);
+    const barW = Math.round((n.score/0.4)*24);
+    const barColor = n.score>0.35?"#FF6B6B": n.score>0.25?"#FFA500":"#4ECDC4";
+    g.appendChild(ns("rect", { x:-12, y:30, width:barW, height:5, rx:2, fill:barColor }));
+
+    const lbl = ns("text", { "text-anchor":"middle", y:5, "font-size":"11", "font-weight":"bold", fill:"#1a1a2e" });
+    lbl.textContent = n.label; g.appendChild(lbl);
+
+    const sc = ns("text", { "text-anchor":"middle", y:44, "font-size":"9", fill:"#777" });
+    sc.textContent = n.score.toFixed(3); g.appendChild(sc);
+
+    g.addEventListener("click", () => {
+      selNode = selNode === n.id ? null : n.id;
+      selEdge = null;
+      render();
+    });
+    layer.appendChild(g);
+  });
+}
+
+function renderRanking() {
+  const ranked = [...NODES].sort((a,b) => b.score-a.score);
+  const container = document.getElementById("ranking");
+  container.innerHTML = "";
+  ranked.forEach((n, i) => {
+    const row = document.createElement("div");
+    row.className = "rank-row" + (selNode===n.id?" selected":"");
+    const barColor = i===0?"#FF6B6B": i===1?"#FFA500":"#4ECDC4";
+    const barW = Math.round((n.score/0.4)*100);
+    row.innerHTML = `
+      <span style="color:#374151;font-size:9px;width:14px">#${i+1}</span>
+      <span style="width:9px;height:9px;border-radius:50%;background:${n.color};flex-shrink:0;display:inline-block"></span>
+      <span style="flex:1;font-size:10px">${n.label}</span>
+      <div class="bar-bg"><div class="bar-fill" style="width:${barW}%;background:${barColor}"></div></div>
+      <span style="font-size:9px;color:#6b7280;width:34px;text-align:right">${n.score.toFixed(3)}</span>
+    `;
+    row.addEventListener("click", () => { selNode = selNode===n.id?null:n.id; selEdge=null; render(); });
+    container.appendChild(row);
+  });
+}
+
+function renderDetail() {
+  const det = document.getElementById("detail");
+  if (!selNode) { det.style.display="none"; return; }
+  const n = getNode(selNode);
+  det.style.display = "block";
+  document.getElementById("det-dot").style.background = n.color;
+  document.getElementById("det-name").textContent = n.label;
+  document.getElementById("det-desc").textContent = n.desc;
+  document.getElementById("det-score").textContent = `anomaly score: ${n.score.toFixed(4)}`;
+
+  const inE = EDGES.filter(e => e.dst===selNode && e.type==="granger");
+  const outE = EDGES.filter(e => e.src===selNode && e.type==="granger");
+  let html = "";
+  if (inE.length) {
+    html += `<div style="color:#4b5563;margin-bottom:4px">CAUSED BY:</div>`;
+    inE.forEach(e => html += `<div class="caused-by">← ${e.src.toUpperCase()} &nbsp;p=${e.p.toFixed(4)} &nbsp;lag=${e.lag*5}s</div>`);
+  }
+  if (outE.length) {
+    html += `<div style="color:#4b5563;margin-top:6px;margin-bottom:4px">CAUSES:</div>`;
+    outE.forEach(e => html += `<div class="causes">→ ${e.dst.toUpperCase()} &nbsp;p=${e.p.toFixed(4)} &nbsp;lag=${e.lag*5}s</div>`);
+  }
+  document.getElementById("det-edges").innerHTML = html;
+}
+
+function renderEdgeDetail() {
+  const ed = document.getElementById("edge-detail");
+  if (selEdge === null) { ed.style.display="none"; return; }
+  const e = EDGES[selEdge];
+  ed.style.display = "block";
+  document.getElementById("ed-name").textContent = `${e.src.toUpperCase()} → ${e.dst.toUpperCase()}`;
+  const pColor = e.p && e.p<0.01 ? "#FF6B6B" : "#FFA500";
+  document.getElementById("ed-props").innerHTML = `
+    <div>type: <span style="color:#fff">${e.type}</span></div>
+    <div>weight: <span style="color:#fff">${e.weight.toFixed(4)}</span></div>
+    ${e.p!=null?`<div>p-value: <span style="color:${pColor}">${e.p.toFixed(4)}</span></div>`:""}
+    ${e.lag!=null?`<div>lag: <span style="color:#fff">${e.lag*5}s</span></div>`:""}
+    <div style="margin-top:6px;color:#374151;font-size:8px;line-height:1.5">
+      ${e.type==="granger"?"Discovered by Granger causality test<br>from live 5G telemetry":"Seeded from 3GPP TS<br>NF dependency specification"}
+    </div>
+  `;
+}
+
+function setFilter(f) {
+  curFilter = f;
+  document.querySelectorAll("#filters button").forEach(b => {
+    b.classList.toggle("active", b.textContent === f);
+  });
+  render();
+}
+
+function render() {
+  drawEdges();
+  drawNodes();
+  renderRanking();
+  renderDetail();
+  renderEdgeDetail();
+}
+
+render();
+</script>
+</body>
+</html>
