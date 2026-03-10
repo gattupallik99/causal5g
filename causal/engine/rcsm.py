@@ -18,7 +18,7 @@ from typing import Optional
 from loguru import logger
 
 try:
-    from pgmpy.models import BayesianNetwork
+    from pgmpy.models import DiscreteBayesianNetwork as BayesianNetwork
     from pgmpy.factors.discrete import TabularCPD
     from pgmpy.inference import VariableElimination
     PGMPY_AVAILABLE = True

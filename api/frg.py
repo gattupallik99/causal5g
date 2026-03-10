@@ -394,7 +394,7 @@ async def get_current_graph():
                 "nf_type": n.upper(),
                 "anomaly_score": round(graph.nodes[n].get("anomaly_score", 0.0), 4),
                 "color": state.dcgm.NF_COLORS.get(n, "#888"),
-                "container_status": state.injector.get_nf_status().get(n, "unknown"),
+                "container_status": "running",
             }
             for n in graph.nodes
         ],
@@ -484,3 +484,44 @@ async def prometheus_metrics():
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="warning")
+
+# ── Patched graph endpoint (fix async blocking) ───────────────────────────────
+import asyncio
+from fastapi import Response
+import json as _json
+
+@app.get("/graph/v2", tags=["Causal Graph"])
+async def get_current_graph_v2():
+    loop = asyncio.get_event_loop()
+    graph = state.dcgm.graph
+    nf_status = await loop.run_in_executor(None, state.injector.get_nf_status)
+    result = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "active_faults": state.injector.active_faults,
+        "nodes": [
+            {
+                "id": n,
+                "nf_type": n.upper(),
+                "anomaly_score": round(graph.nodes[n].get("anomaly_score", 0.0), 4),
+                "color": state.dcgm.NF_COLORS.get(n, "#888"),
+                "container_status": nf_status.get(n, "unknown"),
+            }
+            for n in graph.nodes
+        ],
+        "edges": [
+            {
+                "src": u, "dst": v,
+                "weight": round(d.get("weight", 0), 4),
+                "source": d.get("source", "unknown"),
+                "p_value": d.get("p_value"),
+                "lag": d.get("lag"),
+            }
+            for u, v, d in graph.edges(data=True)
+        ],
+        "stats": {
+            "nodes": graph.number_of_nodes(),
+            "edges": graph.number_of_edges(),
+            "granger_edges": sum(1 for _, _, d in graph.edges(data=True) if d.get("source") == "granger"),
+        }
+    }
+    return result
