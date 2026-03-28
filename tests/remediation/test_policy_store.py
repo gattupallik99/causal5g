@@ -1,63 +1,104 @@
-"""
-Tests for causal5g.remediation.policy_store — Claim 3 policy lookup.
-"""
+"""Tests for PolicyStore — Day 10"""
 import pytest
-from causal5g.remediation.policy_store import (
-    RemediationPolicyStore, PolicyEntry,
-    RemediationAction, RootCauseType
-)
+from causal5g.remediation.policy_store import PolicyStore
 
+@pytest.fixture
+def store():
+    return PolicyStore()
 
-class TestRemediationPolicyStore:
-    def test_default_policies_loaded(self):
-        store = RemediationPolicyStore()
-        assert len(store.list_policies()) > 0
+def test_defaults_loaded(store):
+    policies = store.list_all()
+    assert len(policies) >= 11
 
-    def test_lookup_nf_layer(self):
-        store = RemediationPolicyStore()
-        policy = store.lookup(RootCauseType.NF_LAYER, "smf-1")
-        assert policy is not None
-        assert policy.action == RemediationAction.NF_SCALE_OUT
+def test_all_five_scenarios_have_policies(store):
+    for scenario in ["nrf_crash","amf_crash","smf_crash","pcf_timeout","udm_crash"]:
+        actions = store.get_ordered_actions(scenario)
+        assert len(actions) >= 1, f"No policies for {scenario}"
 
-    def test_lookup_pfcp_binding_failure(self):
-        store = RemediationPolicyStore()
-        policy = store.lookup(RootCauseType.PFCP_BINDING_FAILURE, "upf-1")
-        assert policy is not None
-        assert policy.action == RemediationAction.PFCP_REESTABLISH
+def test_default_fallback_exists(store):
+    actions = store.get_ordered_actions("totally_unknown_fault")
+    assert len(actions) >= 1
+    assert actions[0].fault_scenario == "_default"
 
-    def test_lookup_slice_layer(self):
-        store = RemediationPolicyStore()
-        policy = store.lookup(RootCauseType.SLICE_LAYER, "1:1")
-        assert policy is not None
-        assert policy.action == RemediationAction.PCF_ADMISSION_TIGHTEN
+def test_create_policy(store):
+    entry = store.create("nrf_crash","scale_deployment","nrf",
+                         {"namespace":"free5gc","replicas":3}, priority=2,
+                         description="Scale NRF on repeated crash")
+    assert entry.policy_id is not None
+    assert entry.version == 1
+    assert entry.enabled is True
 
-    def test_lookup_unknown_returns_none(self):
-        store = RemediationPolicyStore()
-        # No policy for an unknown root cause type
-        policy = store.lookup(RootCauseType.SBI_TIMEOUT_CASCADE, "99:99")
-        # SBI_TIMEOUT_CASCADE does have a default policy with wildcard target
-        assert policy is not None   # wildcard * matches
+def test_get_policy(store):
+    entry = store.create("smf_crash","restart_pod","smf",{})
+    fetched = store.get(entry.policy_id)
+    assert fetched is not None
+    assert fetched.policy_id == entry.policy_id
 
-    def test_custom_policy_priority(self):
-        """A higher-priority (lower number) custom policy should win."""
-        store = RemediationPolicyStore()
-        custom = PolicyEntry(
-            root_cause_type=RootCauseType.NF_LAYER,
-            target_entity="smf-1",
-            action=RemediationAction.SMF_TRAFFIC_STEER,
-            priority=1,   # higher priority than default (10)
-        )
-        store.add_policy(custom)
-        policy = store.lookup(RootCauseType.NF_LAYER, "smf-1")
-        assert policy.action == RemediationAction.SMF_TRAFFIC_STEER
+def test_get_nonexistent_returns_none(store):
+    assert store.get("nonexistent") is None
 
-    def test_add_and_list_policy(self):
-        store = RemediationPolicyStore()
-        initial_count = len(store.list_policies())
-        store.add_policy(PolicyEntry(
-            root_cause_type=RootCauseType.CLOUD_RESOURCE_EXHAUSTION,
-            target_entity="upf-pod",
-            action=RemediationAction.NF_SCALE_OUT,
-            priority=5,
-        ))
-        assert len(store.list_policies()) == initial_count + 1
+def test_update_policy(store):
+    entry = store.create("amf_crash","restart_pod","amf",{})
+    updated = store.update(entry.policy_id, priority=5, description="Updated")
+    assert updated.priority == 5
+    assert updated.description == "Updated"
+    assert updated.version == 2
+
+def test_update_nonexistent_raises(store):
+    with pytest.raises(KeyError):
+        store.update("badid", priority=1)
+
+def test_delete_policy(store):
+    entry = store.create("udm_crash","restart_pod","udm",{})
+    assert store.delete(entry.policy_id) is True
+    assert store.get(entry.policy_id) is None
+
+def test_delete_nonexistent_returns_false(store):
+    assert store.delete("nonexistent") is False
+
+def test_disable_and_enable(store):
+    entry = store.create("nrf_crash","notify_operator","ops",{})
+    store.disable(entry.policy_id)
+    assert store.get(entry.policy_id).enabled is False
+    store.enable(entry.policy_id)
+    assert store.get(entry.policy_id).enabled is True
+
+def test_enabled_only_filter(store):
+    entry = store.create("nrf_crash","notify_operator","ops",{})
+    store.disable(entry.policy_id)
+    all_p = store.list_all(fault_scenario="nrf_crash", enabled_only=False)
+    enabled = store.list_all(fault_scenario="nrf_crash", enabled_only=True)
+    assert len(all_p) > len(enabled)
+
+def test_ordered_actions_sorted_by_priority(store):
+    actions = store.get_ordered_actions("nrf_crash")
+    priorities = [a.priority for a in actions]
+    assert priorities == sorted(priorities)
+
+def test_store_version_increments(store):
+    v0 = store.store_version()
+    store.create("nrf_crash","restart_pod","nrf",{})
+    assert store.store_version() == v0 + 1
+
+def test_audit_log_records_create(store):
+    store.create("nrf_crash","restart_pod","nrf",{})
+    log = store.get_audit_log()
+    assert any(e["op"] == "create" for e in log)
+
+def test_audit_log_records_update(store):
+    entry = store.create("nrf_crash","restart_pod","nrf",{})
+    store.update(entry.policy_id, priority=9)
+    log = store.get_audit_log()
+    assert any(e["op"] == "update" for e in log)
+
+def test_audit_log_records_delete(store):
+    entry = store.create("nrf_crash","restart_pod","nrf",{})
+    store.delete(entry.policy_id)
+    log = store.get_audit_log()
+    assert any(e["op"] == "delete" for e in log)
+
+def test_to_dict_structure(store):
+    d = store.to_dict()
+    assert "store_version" in d
+    assert "policy_count" in d
+    assert "policies" in d
