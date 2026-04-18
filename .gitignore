@@ -31,3 +31,7 @@ data/
 *.parquet
 *.pcap
 infra/free5gc/cert/
+
+# Scratch and coverage artifacts
+/main
+.coverage
