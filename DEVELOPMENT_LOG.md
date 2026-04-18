@@ -412,6 +412,94 @@ causal5g/
 
 ---
 
+## Day 12a — CausalDiscovery Facade (April 17, 2026)
+
+### Focus
+
+Turn `causal5g/causal/discovery.py` from a 0%-coverage scaffold into the
+canonical public entry point for the Causal5G discovery pipeline (Claim 1).
+
+### Patent Claim Enablement
+
+**Claim 1 (Bi-Level Causal DAG + Attribution):**
+The `CausalDiscovery` class is the Claim 1 facade that:
+- Accepts a `pd.DataFrame` of NF telemetry (rows = time steps, columns = NF
+  metric names) -- matching the "normalized telemetry window" language of the
+  specification
+- Supports three algorithms via `DiscoveryMethod` enum: `PC` (constraint-based,
+  contemporaneous), `GRANGER` (temporal precedence), and `FUSED` (default --
+  dual-evidence fusion per the claim)
+- Returns `DiscoveryResult` whose four fusion diagnostic fields
+  (`confirmed_edges`, `granger_only_edges`, `pc_only_edges`,
+  `conflict_edges`) directly map to the Claim 1 edge classification language:
+  edges confirmed by both methods receive the highest confidence weight (1.5x);
+  conflict edges trigger the DAG audit path
+- Wraps `PCAlgorithm` and `GrangerPCFusion` from `causal.engine.pc_algorithm`
+  without duplicating their logic; the facade is purely orchestration + I/O shaping
+- `validate_input()` surfaces data-quality warnings (small sample, constant
+  columns, non-DataFrame) without raising, allowing callers to proceed with
+  degraded-confidence discovery
+
+### Code Changes
+
+`causal5g/causal/discovery.py` (rewritten, 108 statements, 100% coverage)
+  - `DiscoveryMethod` enum: PC / GRANGER / FUSED
+  - `DiscoveryResult` dataclass: graph, method, variables, n_samples,
+    confirmed_edges, granger_only_edges, pc_only_edges, conflict_edges, warnings
+  - `CausalDiscovery.validate_input()`: returns warning list, never raises
+  - `CausalDiscovery.fit()`: preprocessing (drop non-numeric, drop constant
+    columns), method dispatch to _run_pc / _run_granger / _run_fused
+  - `_run_pc`: wraps `PCAlgorithm.fit()` -> `PCResult.to_networkx()`
+  - `_run_granger`: pairwise `grangercausalitytests` on all column pairs ->
+    `nx.DiGraph` with p-value edge attributes
+  - `_run_fused`: runs both PC and Granger, delegates fusion to
+    `GrangerPCFusion.fuse()` and `GrangerPCFusion.to_networkx()`, then
+    classifies fused_edges into the four diagnostic buckets
+  - `_compute_granger_edges()`: standardizes data, runs `grangercausalitytests`
+    for all ordered (cause, effect) pairs, returns best-p dict
+
+`tests/causal/test_discovery.py` (new, 40 tests)
+  - `TestValidateInput` (11 tests): non-DataFrame, empty, single-variable,
+    small sample, no numeric, constant column, clean input, early-return
+  - `TestEdgeCases` (7 tests): empty DataFrame, non-DataFrame, single column,
+    constant column dropped, all-constant, two-col-one-constant, warnings attached
+  - `TestPCMethod` (8 tests): result shape, DiGraph, variables, n_samples,
+    no fusion diagnostics, fork variables, chain edge, fork connectivity
+  - `TestGrangerMethod` (7 tests): result shape, DiGraph, variables, lagged
+    cause detection, granger_only populated, all nodes present, fork nrf-is-cause
+  - `TestFusedMethod` (7 tests): result shape, default method, DiGraph,
+    variables, all-four-buckets injection, lagged chain edge, all nodes
+
+### Tests
+
+```
+tests/causal/test_discovery.py  (new, 40 tests)
+```
+
+### Results
+
+```
+Tests:    222 passed (was 182; +40 new)
+Coverage: 83% overall (was 79%)
+  causal5g/causal/discovery.py   0% -> 100%
+```
+
+### Claim Status After Day 12a
+
+| Claim | Status |
+|-------|--------|
+| Claim 1 | Reduced to practice; discovery facade now 100% covered |
+| Claim 2 | Reduced to practice (Day 10) |
+| Claim 3 | Reduced to practice (Day 11) |
+| Claim 4 | Reduced to practice (Day 10) |
+
+**Remaining 0%-coverage modules (Day 12b targets):**
+- `causal5g/graph/cross_domain.py`
+- `causal5g/graph/hierarchical_dag.py`
+- `causal5g/causal/pcmci.py`
+
+---
+
 ## Notes on Reduction to Practice
 
 All code in this repository represents a genuine working implementation, not pseudocode or paper claims. Key evidence:
