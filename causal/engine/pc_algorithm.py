@@ -504,13 +504,25 @@ class PCAlgorithm:
         R2: If a → b → c and a — c                   →  orient a → c
         R3: If a — c ← b, a — d → c, a — b          →  orient a → c
         R4: If a — b → c ← d, a — d, a — c          →  orient a → c
+
+        The loop is bounded by (|skeleton_edges| × 4) iterations as a defense
+        against any future rule-interaction bug producing a fixed-point
+        oscillation. A correct implementation converges in at most |E|
+        orientations, so 4× |E| is comfortably above the theoretical maximum.
         """
-        changed = True
-        while changed:
+        max_iterations = max(4 * skeleton.number_of_edges(), 16)
+        for _ in range(max_iterations):
             changed = False
             for u, v in list(skeleton.edges()):
-                # Only try to orient if still undirected
+                # Skip if the edge is already resolved in either direction,
+                # or has already been removed from the CPDAG. Only undirected
+                # (both u→v and v→u present) pairs should be reconsidered —
+                # otherwise Meek rules can re-fire on ghost edges and loop.
                 if self._is_directed(cpdag, u, v):
+                    continue
+                if self._is_directed(cpdag, v, u):
+                    continue
+                if not (cpdag.has_edge(u, v) and cpdag.has_edge(v, u)):
                     continue
 
                 if self._apply_r1(cpdag, skeleton, u, v):
@@ -525,35 +537,58 @@ class PCAlgorithm:
                 if self._apply_r2(cpdag, skeleton, v, u):
                     changed = True
                     continue
+            if not changed:
+                return
+        logger.warning(
+            "Meek rules hit iteration cap %d — orientation may be incomplete",
+            max_iterations,
+        )
 
     def _apply_r1(self, cpdag, skeleton, b, c):
-        """R1: a→b—c, a not adjacent to c  →  orient b→c"""
+        """R1: a→b—c, a not adjacent to c, a ≠ c  →  orient b→c"""
         for a in cpdag.predecessors(b):
+            if a == c:
+                # R1 requires a ≠ c (v-structure needs a distinct third node).
+                # Without this guard, when c→b is directed we'd treat c itself
+                # as the "predecessor" and spuriously orient b→c, destroying
+                # the existing c→b orientation and corrupting the CPDAG.
+                continue
             if not cpdag.has_edge(b, a):  # a→b is directed
                 if not skeleton.has_edge(a, c):
-                    self._orient_edge(cpdag, b, c)
-                    logger.debug("R1: %s→%s—%s  ⟹  %s→%s", a, b, c, b, c)
-                    return True
+                    if self._orient_edge(cpdag, b, c):
+                        logger.debug("R1: %s→%s—%s  ⟹  %s→%s", a, b, c, b, c)
+                        return True
         return False
 
     def _apply_r2(self, cpdag, skeleton, a, c):
-        """R2: a→b→c, a—c  →  orient a→c"""
+        """R2: a→b→c, a—c, b ≠ c  →  orient a→c"""
         for b in cpdag.successors(a):
+            if b == c:
+                continue
             if not cpdag.has_edge(b, a):  # a→b directed
                 if cpdag.has_edge(b, c) and not cpdag.has_edge(c, b):  # b→c directed
                     if skeleton.has_edge(a, c) and not self._is_directed(cpdag, a, c):
-                        self._orient_edge(cpdag, a, c)
-                        logger.debug("R2: %s→%s→%s  ⟹  %s→%s", a, b, c, a, c)
-                        return True
+                        if self._orient_edge(cpdag, a, c):
+                            logger.debug("R2: %s→%s→%s  ⟹  %s→%s", a, b, c, a, c)
+                            return True
         return False
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     @staticmethod
-    def _orient_edge(cpdag: nx.DiGraph, u: str, v: str) -> None:
-        """Orient u→v by removing the reverse v→u if present."""
+    def _orient_edge(cpdag: nx.DiGraph, u: str, v: str) -> bool:
+        """
+        Orient u→v by removing the reverse v→u if present.
+
+        Returns True if the CPDAG was modified (i.e. an undirected edge became
+        directed), False if the edge was already oriented u→v or absent. The
+        bool return is used by Meek rules R1/R2 to detect actual progress and
+        terminate the fixed-point loop correctly.
+        """
         if cpdag.has_edge(v, u):
             cpdag.remove_edge(v, u)
+            return True
+        return False
 
     @staticmethod
     def _is_directed(cpdag: nx.DiGraph, u: str, v: str) -> bool:
@@ -606,7 +641,12 @@ class GrangerPCFusion:
     Fusion logic:
       • CONFIRMED  — edge present in BOTH Granger and PC (directed same way)
                      Weight multiplier: 1.5× (high confidence)
-      • GRANGER_ONLY — Granger edge not corroborated by PC
+      • GRANGER_PC_UNDIRECTED — PC skeleton corroborates the edge but PC left
+                     it undirected (no v-structure / Meek rule). Granger
+                     supplies direction via temporal precedence — a valid
+                     orientation signal that observational CI tests cannot
+                     express. Weight multiplier: 1.5× (same as confirmed).
+      • GRANGER_ONLY — Granger edge not corroborated by PC skeleton
                        Weight multiplier: 1.0× (normal)
       • PC_ONLY    — PC edge not in Granger (PC may be oriented or undirected)
                      Weight multiplier: 0.7× (structural but not temporal)
@@ -678,8 +718,14 @@ class GrangerPCFusion:
                 logger.warning("Causal conflict: Granger %s→%s vs PC %s→%s",
                                cause, effect, effect, cause)
             elif frozenset([cause, effect]) in pc_undirected:
+                # PC skeleton corroborates the edge; PC could not orient it
+                # (no v-structure or Meek rule applies). Granger provides the
+                # direction via temporal precedence — a legitimate orientation
+                # signal that PC's observational CI tests cannot express. We
+                # therefore weight this at 1.5× (same as fully CONFIRMED) and
+                # preserve edge_type_pc=UNDIRECTED for downstream inspection.
                 entry["method"] = "granger_pc_undirected"
-                entry["weight"] = 1.2
+                entry["weight"] = 1.5
                 entry["edge_type_pc"] = UNDIRECTED
 
             fused[(cause, effect)] = entry

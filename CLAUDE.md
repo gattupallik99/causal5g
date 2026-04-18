@@ -3,15 +3,19 @@
 ## Inventor & Ownership
 
 - **Inventor:** Krishna Kumar Gattupalli (independent; no assignee)
-- **Repo:** github.com/gattupallik/causal5g (private)
+- **Official email (filings, counsel, USPTO, all patent communications):** gattupallik@gmail.com
+- **Project email (git commits, repo-only work):** harekrishna9krishna@gmail.com
+- **Repo:** git@github.com:gattupallik99/causal5g.git (private, SSH)
 - **Local path:** ~/causal5g
+- **Git identity:** gattupallik99 <harekrishna9krishna@gmail.com>
 
 ## Patent Context
 
 **Title:** System and Method for Slice-Topology-Aware Causal Root Cause Analysis and Closed-Loop Remediation for Cloud-Native 5G Standalone Core Networks
 
-**Filing status:** US Provisional — **NOT YET FILED** (top priority)
+**Filing status:** US Provisional — **FILED** (March 2026; confirm exact date + application number)
 **Entity status:** Micro Entity ($65 USPTO filing fee)
+**Non-provisional deadline:** 12 months from filing date (target: file non-provisional by March 2027)
 
 **The four claims:**
 1. **Claim 1** — Bi-level causal DAG construction (Level 1 = NF nodes, Level 2 = slice subgraphs) with NF-layer vs slice-layer root cause attribution
@@ -21,17 +25,21 @@
 
 **All four claims are reduced to practice as of commit `f666442` (Day 11, April 17, 2026).**
 
-## Disclosure Discipline — IMPORTANT
+## Disclosure Discipline — Post-Filing
 
-Until the provisional is filed, do not disclose publicly:
+Provisional is filed, so public references are now acceptable with the following guardrails:
+
+**Safe to disclose publicly (with "patent pending" attribution):**
 - The name "Causal5G"
-- The PC algorithm + Granger causality fusion mechanism
-- The bi-level DAG slice-topology construction
-- Closed-loop remediation details
+- High-level mechanism: bi-level DAG, four-domain hierarchy, confidence-gated remediation, feedback recalibration
+- IEEE ISEC 2026 (Princeton) presentation, blog posts, LinkedIn, arXiv
 
-Applies to: blog posts, conference talks, issue comments, LinkedIn, public README edits, arXiv, IEEE ISEC 2026 (Princeton). The repo itself being public is already a grace-period start; additional disclosure expands exposure.
+**Still sensible to hold back until non-provisional filing strategy is decided:**
+- Exact claim language (verbatim from the provisional)
+- Implementation specifics that extend beyond the provisional and could become continuation-in-part material
+- Pre-release code or unpublished experimental results that could count as new matter
 
-Safe to discuss publicly: general interest in 5G observability, causal inference, K8s operator work.
+**Foreign filing note:** public disclosure in any form starts the 12-month Paris Convention clock for foreign patents. Track the filing date as the anchor for PCT / direct-national-phase decisions.
 
 ## Repository Architecture
 
@@ -122,16 +130,17 @@ Coverage: <delta>
 - **Demo dashboard:** http://localhost:8080/demo
 - **Control panel:** http://localhost:8080/control
 
-## Day 12 Priorities (top to bottom)
+## Current Priorities (top to bottom)
 
-1. **File US Provisional Patent** — every day without filing is exposure risk. Need: claim language finalized, figures, inventor declaration, $65 fee.
-2. **Coverage expansion — Claim 2 modules at 0%:**
-   - `causal5g/graph/cross_domain.py` (0%)
-   - `causal5g/graph/hierarchical_dag.py` (0%)
-   - `causal5g/causal/discovery.py` (0%)
-   - `causal5g/causal/pcmci.py` (0%)
+Provisional is filed. Focus shifts to hardening the reduction-to-practice and preparing the non-provisional / ISEC 2026 story.
+
+1. **Coverage expansion — last 0% module:**
+   - `causal5g/causal/pcmci.py` (0%) — Claim 4
+   - Already closed in Day 12a-b: `cross_domain.py`, `hierarchical_dag.py`, `discovery.py`
+2. **Wire the four unmounted routers into `api/frg.py`:** `api/rae.py`, `api/slice_router.py`, `api/pc_causal.py`, `api/control.py` — all define `APIRouter` with a `prefix` but `include_router` is never called. Section 3 of `DEMO_DEEP_DIVE.md` has the 4-line fix.
 3. **Production K8s client integration** — wire the `kubernetes` Python client into `causal5g/remediation/executor.py` `_do_*` handlers. Keep interface contract intact (tests must still pass).
-4. **Prometheus metrics exporter** — observability for ISEC 2026 (deferred until post-filing).
+4. **Prometheus metrics exporter** — observability story for ISEC 2026.
+5. **Non-provisional prep** — claim language review, figure refinement, continuation-in-part scoping on anything built after the provisional filing date.
 
 ## Communication Style
 
@@ -145,8 +154,8 @@ Coverage: <delta>
 
 ## Related Context
 
-- **IEEE ISEC 2026:** Upcoming presentation at Princeton. Do not use "Causal5G" or disclose the PC-algorithm mechanism until provisional is filed.
-- **H1B status:** Active constraint on any IP-assignment paperwork; this is a personally-filed independent patent. Confirm inventor/assignee choice with patent and immigration counsel before filing, as employer IP-assignment agreements and H1B specialty-occupation rules may still have claims on the invention.
+- **IEEE ISEC 2026:** Upcoming presentation at Princeton. Post-filing, "Causal5G" and the bi-level DAG mechanism can be referenced with "patent pending" attribution. Hold verbatim claim language until non-provisional strategy is decided.
+- **H1B status:** Personally-filed independent patent, no employer assignee. Keep patent + immigration counsel in the loop on any IP-assignment question for the non-provisional, especially if employer-related work during H1B specialty-occupation hours could later be challenged as having claims on the invention.
 
 ---
 

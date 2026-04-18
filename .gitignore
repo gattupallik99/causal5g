@@ -35,3 +35,10 @@ infra/free5gc/cert/
 # Scratch and coverage artifacts
 /main
 .coverage
+
+# Demo orchestration runtime artifacts
+uvicorn.log
+uvicorn.pid
+
+# Local Claude Code / agent settings (not part of the reduction-to-practice)
+.claude/

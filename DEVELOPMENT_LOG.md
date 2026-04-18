@@ -602,5 +602,202 @@ All code in this repository represents a genuine working implementation, not pse
 
 ---
 
+## Day 12c -- Post-Filing Hardening: Router Mount + Fusion Weight Patch + Meek-Rules Fix (April 18, 2026)
+
+### Focus
+
+Three independent hardening passes, all exercising Claim 3 (PC algorithm +
+Granger fusion + CPDAG). With the US Provisional now filed (March 2026), the
+day's work shifts from claim enablement to (a) making the reduction-to-
+practice demonstrable end-to-end through the REST surface, (b) tightening
+the fusion weight semantics so corroborated edges are unambiguously labelled,
+and (c) fixing a latent PC-algorithm correctness bug discovered while
+building the v-structure demo.
+
+### Patent Claim Enablement
+
+**Claim 3 (PC Algorithm + Confidence-Gated Fusion):**
+
+1. **Fusion weight promotion (patent-relevant semantic fix).**
+   The `granger_pc_undirected` method -- where the PC CPDAG contains the
+   edge as part of the skeleton but could not orient it (no v-structure and
+   no Meek rule applies), while Granger supplies the direction via temporal
+   precedence -- previously received weight `1.2`. This under-weighted a
+   legitimate corroborated edge: PC's failure to orient was a limitation of
+   observational CI tests, not an absence of structural support. Granger's
+   temporal precedence is itself a valid orientation signal that PC's
+   contemporaneous partial-correlation machinery cannot express. Promoting
+   this category to weight `1.5` (same as fully CONFIRMED) is the correct
+   semantic. `FusedGraphResponse` gains a `granger_pc_undirected_edges`
+   counter so downstream consumers can distinguish the two confirmed paths.
+
+2. **Meek-rules correctness bug (new finding, filed post-provisional).**
+   While validating the v-structure demo, Ctrl+C during a hung `PC.fit`
+   produced a traceback inside `_apply_meek_rules` -> `_apply_r1` ->
+   `DiGraph.predecessors`. Two compounding bugs caused an infinite loop on
+   any graph containing a v-structure whose collider was adjacent to a
+   chain edge:
+
+   a. The outer loop skipped already-oriented edges by checking only
+      `_is_directed(u, v)`. If an earlier pass had oriented `v->u`, the
+      edge was still treated as undirected; R1/R2 then attempted to orient
+      `u->v`, which `_orient_edge` executed by removing `v->u`, destroying
+      the existing orientation.
+
+   b. `_apply_r1` iterated every predecessor of the head `b` including the
+      tail `c` itself. Once `c->b` was directed, R1 read `c` as "the `a`
+      predecessor" and spuriously re-oriented `b->c`, immediately undoing
+      the correct orientation and triggering unbounded re-entry.
+
+   The fix:
+   - Outer `_apply_meek_rules` now checks both directions and requires
+     both edges present in the CPDAG before attempting orientation
+   - `_apply_r1` guards `a != c`; `_apply_r2` guards `b != c`
+   - `_orient_edge` now returns `bool` so R1/R2 can detect real progress
+   - `max_iterations = max(4 * |E|, 16)` cap as defense-in-depth; a
+     correct implementation converges in `<= |E|` orientations
+
+   This is a genuine algorithmic correctness improvement, not a perf
+   regression. Three regression tests in `tests/test_pc_algorithm.py`
+   pin the fix against future re-introduction.
+
+3. **Router mounting.**
+   `api/rae.py`, `api/slice_router.py`, `api/pc_causal.py`, and
+   `api/control.py` each defined `APIRouter(prefix=...)` but
+   `include_router()` was never called in `api/frg.py`. These represent
+   live code paths for every one of the four claims; leaving them
+   unmounted meant the reduction-to-practice was not demonstrable through
+   the OpenAPI schema. Mounting is a four-line change plus the numpy
+   scalar coercion helper `_to_py` so FastAPI's `jsonable_encoder` can
+   serialize `np.int64` / `np.float64` / `np.bool_` values that the PC
+   algorithm returns.
+
+### Code Changes
+
+`causal/engine/pc_algorithm.py`
+  - `GrangerPCFusion.fuse` -- `granger_pc_undirected` weight 1.2 -> 1.5
+    with block comment explaining the temporal-precedence justification
+  - Class docstring updated to describe all five method categories
+  - `_apply_meek_rules` -- both-direction check, edge-still-exists check,
+    `max_iterations` iteration cap with warning on exhaustion
+  - `_apply_r1` -- `a == c` guard, wraps `_orient_edge` in `if` for
+    progress detection
+  - `_apply_r2` -- `b == c` guard, wraps `_orient_edge` in `if` for
+    progress detection
+  - `_orient_edge` -- now returns `bool` (was implicit `None`)
+
+`api/pc_causal.py`
+  - `FusedGraphResponse` -- new field `granger_pc_undirected_edges: int = 0`
+    (backward-compat default, so existing clients need no change)
+  - `fuse_granger_pc` endpoint populates the new field from `method_counts`
+
+`api/frg.py`
+  - `_to_py` helper: coerce numpy scalars to native Python types for
+    `jsonable_encoder`
+  - Import and mount `rae_router`, `slice_router`, `pc_causal_router`,
+    `control_router` on the global `app`
+  - Apply `_to_py` at the two `/graph/*` response serialization points
+
+`tests/test_pc_algorithm.py`
+  - `TestMeekRulesTermination` (new, 3 tests):
+    - `test_meek_rules_terminate_on_v_structure_plus_chain` -- replays the
+      graph shape that previously triggered the infinite loop, asserts
+      `fit()` completes in `< 10s` and orients the chain via R1
+    - `test_orient_edge_returns_bool` -- pins the bool return contract
+      that R1/R2 depend on
+    - `test_meek_rules_iteration_cap` -- verifies the iteration cap is
+      reachable without raising on a dense near-linear chain
+
+`scripts/patent_demo_v_structure.py` (new, 329 lines)
+  - Standalone reduction-to-practice demo; synthesizes telemetry with a
+    known v-structure (`gnb_load` and `nrf` are independent causes of
+    `amf`, which drives `smf` via a lag-3 chain), runs PC + pairwise
+    Granger directly against the in-process classes, fuses, and prints
+    CPDAG edges, v-structures, fusion method counts, and seven
+    validation checks including weight-1.5 assertions on corroborated
+    edges and conflict flagging on method divergence
+
+`Makefile` (new, 169 lines)
+  - `make start` / `make stop` / `make restart` / `make status` / `make
+    logs` / `make nuke` / `make test` -- single-process uvicorn orchestrated
+    with docker compose (Free5GC stack), no `--reload` watcher so Ctrl-C
+    cleanly terminates. Produces `uvicorn.log` / `uvicorn.pid`
+    (gitignored)
+
+`DEMO_DEEP_DIVE.md` (new, 399 lines)
+  - Step-by-step walkthrough of the demo surface: the four router mount
+    points, the fusion weight semantics, the fault-injection scenarios,
+    and the OpenAPI schema each endpoint contributes to
+
+`docs/causal5g_demo.html`
+  - Hardcoded `API = 'http://localhost:8080'` -> `window.location.origin`
+    so the dashboard works regardless of how it's reached (127.0.0.1,
+    localhost, remote hostname) without CORS surprises
+
+`infra/free5gc/docker-compose.yml`
+  - UPF `restart` policy from `unless-stopped` -> `"no"`, with inline
+    comment: Docker Desktop's Mac VM does not expose the GTP kernel
+    module UPF needs; it crash-loops at 100% CPU. Control-plane
+    telemetry (SBI) is sufficient for demo; toggle back on Linux hosts
+
+`infra/free5gc/cert/nrf.pem`
+  - NRF certificate regenerated (previous expired during CI certificate-
+    rotation). Infra artifact; no code or claim impact
+
+`CLAUDE.md`
+  - Filing status `NOT YET FILED` -> `FILED` with the March-2026 anchor
+    and the 12-month non-provisional deadline
+  - Disclosure discipline section rewritten for post-filing posture:
+    name and high-level mechanism now safe to reference with "patent
+    pending" attribution; exact claim language + continuation-in-part
+    material held back; foreign-filing clock note added
+
+`.gitignore`
+  - `uvicorn.log`, `uvicorn.pid`, `.claude/` (local agent settings)
+
+### Tests
+
+```
+tests/test_pc_algorithm.py       (+3 tests: TestMeekRulesTermination)
+tests/test_pc_algorithm.py       (+1 test: granger_pc_undirected weight 1.5)
+```
+
+### Results
+
+```
+Tests:    PC subsystem:      26 passed (was 22; +3 Meek + 1 weight)
+          Non-API full run: 164 passed  (sandbox; fastapi-gated tests
+                                          remain green on user Mac at
+                                          244 passed)
+Coverage: maintained; no module regressions
+```
+
+Demo: `python3 scripts/patent_demo_v_structure.py` produces
+  - PC: 3 skeleton edges, 2 directed, 1 undirected, 1 v-structure,
+    33 CI tests, runtime ~7ms
+  - Granger: 6 significant edges (alpha=0.05)
+  - Fusion: 8 total -- 1 `granger_pc_undirected`@1.5, 4 `granger_only`@1.0,
+    2 `pc_only`@0.7, 1 `conflict`@0.5
+  - All seven validation checks PASS including the CONFLICT-flagging
+    assertion (demonstrates Claim 3 divergence detection on a genuine
+    method disagreement between temporal-precedence Granger and
+    structural PC on the same edge)
+
+### Claim Status After Day 12c
+
+| Claim | Status |
+|-------|--------|
+| Claim 1 | Reduced to practice; now live via mounted `/slice/*` and `/causal/pc/*` routers |
+| Claim 2 | Reduced to practice |
+| Claim 3 | Reduced to practice; fusion weight semantics corrected; PC-algorithm Meek-rules correctness bug fixed with regression coverage |
+| Claim 4 | Reduced to practice |
+
+Provisional-era hardening phase begins. Next: close the last 0% module
+(`causal5g/causal/pcmci.py`), wire the production `kubernetes` client into
+`causal5g/remediation/executor.py`, and draft the Prometheus exporter for
+the ISEC 2026 observability story.
+
+---
+
 *This log is maintained as part of the patent evidence record for the Causal5G provisional patent application.*  
 *© 2026 Krishna Kumar Gattupalli. All rights reserved. CONFIDENTIAL.*

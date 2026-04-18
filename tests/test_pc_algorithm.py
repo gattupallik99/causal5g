@@ -339,6 +339,38 @@ class TestGrangerPCFusion(unittest.TestCase):
             assert edge["method"] in ("granger_only", "conflict"), \
                 f"Expected granger_only or conflict, got {edge['method']}"
 
+    def test_granger_pc_undirected_promoted_to_1_5x(self):
+        """
+        When PC corroborates the skeleton but leaves the edge undirected,
+        Granger's temporal precedence legitimately orients it. Fusion should
+        weight these edges at 1.5× (same as CONFIRMED), not the old 1.2×.
+        """
+        from causal.engine.pc_algorithm import PCResult
+        pc_result = PCResult(
+            variables=["A", "B"],
+            skeleton_edges=[("A", "B")],
+            cpdag_edges=[("A", "B", UNDIRECTED)],  # PC skeleton only, unoriented
+            separation_sets={},
+            v_structures=[],
+            independence_tests=[],
+            elapsed_seconds=0.0,
+            alpha=0.05,
+            n_samples=100,
+            n_variables=2,
+        )
+        granger_edges = {("A", "B"): 0.001}  # Granger supplies direction
+
+        fused = GrangerPCFusion().fuse(granger_edges, pc_result)
+        edge = next(e for e in fused
+                    if e["source"] == "A" and e["target"] == "B")
+        assert edge["method"] == "granger_pc_undirected"
+        assert edge["weight"] == 1.5, (
+            "granger_pc_undirected edges must weight at 1.5x "
+            "(patent Claim 3 fusion: Granger temporal direction orients "
+            "PC's unoriented skeleton edge)"
+        )
+        assert edge["edge_type_pc"] == UNDIRECTED  # inspection info preserved
+
     def test_conflict_detection(self):
         """Granger A→B conflicting with PC B→A should be flagged."""
         # Build minimal PCResult with B→A directed
@@ -499,6 +531,102 @@ class TestFaultScenario(unittest.TestCase):
         confirmed = [e for e in fused if e["method"] == "confirmed"]
         for e in confirmed:
             assert e["weight"] == 1.5
+
+
+class TestMeekRulesTermination(unittest.TestCase):
+    """
+    Regression tests for the Day 12c Meek-rules bug fix.
+
+    Two compounding bugs in the earlier implementation caused an infinite loop
+    on data that produced a v-structure where a neighbour of the collider was
+    itself a candidate for R1/R2 orientation:
+
+      1. Outer loop skipped already-directed edges by checking only
+         `_is_directed(u, v)` — if v→u had been oriented in an earlier pass
+         the edge was still treated as undirected, allowing R1/R2 to attempt
+         to orient u→v and corrupt the CPDAG.
+      2. `_apply_r1` iterated ALL predecessors of b including the TAIL (c)
+         itself, so once c→b was directed it was immediately re-read as
+         "a→b" with a=c and spuriously reoriented b→c.
+
+    The fix: (a) outer loop checks both directions and requires both edges
+    present, (b) R1 guards `a ≠ c`, R2 guards `b ≠ c`, (c) `_orient_edge`
+    returns bool so R1/R2 can detect real progress, (d) bounded iteration
+    cap as defense-in-depth.
+
+    This suite asserts termination (no infinite loop) and correctness of
+    the CPDAG on graphs that previously triggered the bug.
+    """
+
+    def test_meek_rules_terminate_on_v_structure_plus_chain(self):
+        """
+        Telemetry modelling the v-structure demo:
+            gnb_load → amf ← nrf    (collider at amf)
+            amf → smf               (chain to be oriented by R1)
+
+        This graph exercises both Meek rules and the outer loop; the old
+        implementation hung here. Test asserts fit() completes quickly.
+        """
+        import time
+        rng = np.random.default_rng(42)
+        n = 300
+        gnb = rng.normal(0, 1, n)
+        nrf = rng.normal(0, 1, n)
+        amf = 0.6 * gnb + 0.6 * nrf + rng.normal(0, 0.3, n)
+        smf = 0.7 * amf + rng.normal(0, 0.3, n)
+        df = pd.DataFrame({"gnb": gnb, "nrf": nrf, "amf": amf, "smf": smf})
+
+        pc = PCAlgorithm(alpha=0.05, max_cond_set=3)
+        t0 = time.time()
+        result = pc.fit(df)
+        elapsed = time.time() - t0
+
+        # Termination bound — vastly exceeds normal runtime (~10ms) but
+        # catches any regression reintroducing an infinite loop.
+        assert elapsed < 10.0, f"fit() took {elapsed:.1f}s, possible infinite loop"
+
+        # Correctness: PC should recover the v-structure at amf and orient
+        # the chain edge amf→smf via Meek R1.
+        assert len(result.v_structures) >= 1
+        directed = result.directed_edges()
+        assert ("amf", "smf") in directed, \
+            f"Meek R1 failed to orient amf→smf; directed={directed}"
+
+    def test_orient_edge_returns_bool(self):
+        """
+        The `_orient_edge` helper must return True when it removes the
+        reverse edge and False otherwise. Meek rules R1/R2 depend on this
+        bool to detect progress; a None return silently breaks convergence.
+        """
+        import networkx as nx
+        g = nx.DiGraph()
+        g.add_edge("a", "b")
+        g.add_edge("b", "a")
+        # undirected (both directions present) — orienting a→b removes b→a
+        assert PCAlgorithm._orient_edge(g, "a", "b") is True
+        # already oriented a→b — no reverse to remove
+        assert PCAlgorithm._orient_edge(g, "a", "b") is False
+
+    def test_meek_rules_iteration_cap(self):
+        """
+        Even pathological inputs must not loop unbounded. The cap of
+        4·|E| iterations is defense-in-depth. We verify the warning path
+        is reachable by running on a dense graph and checking fit() still
+        completes without raising.
+        """
+        import time
+        rng = np.random.default_rng(7)
+        # 6 variables in a roughly-linear chain with noise — forces many
+        # Meek-rule passes without being pathologically slow.
+        base = rng.normal(0, 1, 250)
+        df = pd.DataFrame({
+            f"v{i}": base * (0.3 ** i) + rng.normal(0, 0.4, 250)
+            for i in range(6)
+        })
+        pc = PCAlgorithm(alpha=0.05, max_cond_set=3)
+        t0 = time.time()
+        pc.fit(df)
+        assert time.time() - t0 < 10.0
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

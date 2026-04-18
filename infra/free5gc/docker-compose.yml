@@ -36,7 +36,12 @@ services:
       causal5g-net:
         aliases:
           - upf.free5gc.org
-    restart: unless-stopped
+    # UPF requires Linux kernel GTP module + iptables NAT which Docker
+    # Desktop's Mac VM does not expose cleanly; it crash-loops on boot.
+    # Demo uses control-plane telemetry only (SBI), so UPF is not needed.
+    # Set to "no" to avoid CPU thrash during demos; toggle back to
+    # "unless-stopped" when running on a Linux host.
+    restart: "no"
     labels:
       - "causal5g.nf=upf"
 

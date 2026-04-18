@@ -625,7 +625,9 @@
 </div>
 
 <script>
-const API = 'http://localhost:8080';
+// Use the page's own origin so the dashboard works whether loaded via
+// localhost, 127.0.0.1, or a remote hostname (no CORS surprises).
+const API = window.location.origin;
 let activeFaults = [];
 let scenarios = {};
 let logEntries = [];
@@ -821,7 +823,7 @@ async function tick() {
 // Init
 loadScenarios();
 addLog('causal5g dashboard initialized', 'analysis');
-addLog('Connecting to FRG API at localhost:8080...', 'analysis');
+addLog(`Connecting to FRG API at ${API}...`, 'analysis');
 tick();
 setInterval(tick, 5000);
 </script>

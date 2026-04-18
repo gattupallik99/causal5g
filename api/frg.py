@@ -35,6 +35,20 @@ from causal.engine.rcsm import RootCauseScoringModule, FaultReport
 from faults.injector import FaultInjector
 
 
+def _to_py(x):
+    """Convert numpy scalars (int64, float64, bool_, etc.) to native Python
+    types so FastAPI's jsonable_encoder can serialize them. Pass through for
+    anything already native, None, or composite types."""
+    if x is None:
+        return None
+    if hasattr(x, "item") and not isinstance(x, (list, tuple, dict, set, str, bytes)):
+        try:
+            return x.item()
+        except (ValueError, AttributeError):
+            return x
+    return x
+
+
 # ── Global pipeline state ─────────────────────────────────────
 class PipelineState:
     def __init__(self):
@@ -161,6 +175,21 @@ Inject faults via REST, watch the causal graph react in real time.
     lifespan=lifespan,
 )
 app.mount("/static", StaticFiles(directory="docs"), name="static")
+
+# --- Patent-claim routers (Claims 1 + 3) -----------------------------------
+# These APIRouter modules each define their own `prefix`; mounting them here
+# exposes the slice-topology CRUD, PC-algorithm discovery, Remediation Action
+# Engine, and container control-panel routes in the live OpenAPI schema.
+from api.rae import router as rae_router
+from api.slice_router import router as slice_router
+from api.pc_causal import router as pc_causal_router
+from api.control import router as control_router
+
+app.include_router(rae_router)
+app.include_router(slice_router)
+app.include_router(pc_causal_router)
+app.include_router(control_router)
+# ---------------------------------------------------------------------------
 
 @app.get("/demo", include_in_schema=False)
 async def demo():
@@ -392,7 +421,7 @@ async def get_current_graph():
             {
                 "id": n,
                 "nf_type": n.upper(),
-                "anomaly_score": round(graph.nodes[n].get("anomaly_score", 0.0), 4),
+                "anomaly_score": round(float(_to_py(graph.nodes[n].get("anomaly_score", 0.0)) or 0.0), 4),
                 "color": state.dcgm.NF_COLORS.get(n, "#888"),
                 "container_status": "running",
             }
@@ -401,10 +430,10 @@ async def get_current_graph():
         "edges": [
             {
                 "src": u, "dst": v,
-                "weight": round(d.get("weight", 0), 4),
+                "weight": round(float(_to_py(d.get("weight", 0)) or 0.0), 4),
                 "source": d.get("source", "unknown"),
-                "p_value": d.get("p_value"),
-                "lag": d.get("lag"),
+                "p_value": _to_py(d.get("p_value")),
+                "lag": _to_py(d.get("lag")),
             }
             for u, v, d in graph.edges(data=True)
         ],
@@ -502,7 +531,7 @@ async def get_current_graph_v2():
             {
                 "id": n,
                 "nf_type": n.upper(),
-                "anomaly_score": round(graph.nodes[n].get("anomaly_score", 0.0), 4),
+                "anomaly_score": round(float(_to_py(graph.nodes[n].get("anomaly_score", 0.0)) or 0.0), 4),
                 "color": state.dcgm.NF_COLORS.get(n, "#888"),
                 "container_status": nf_status.get(n, "unknown"),
             }
@@ -511,10 +540,10 @@ async def get_current_graph_v2():
         "edges": [
             {
                 "src": u, "dst": v,
-                "weight": round(d.get("weight", 0), 4),
+                "weight": round(float(_to_py(d.get("weight", 0)) or 0.0), 4),
                 "source": d.get("source", "unknown"),
-                "p_value": d.get("p_value"),
-                "lag": d.get("lag"),
+                "p_value": _to_py(d.get("p_value")),
+                "lag": _to_py(d.get("lag")),
             }
             for u, v, d in graph.edges(data=True)
         ],

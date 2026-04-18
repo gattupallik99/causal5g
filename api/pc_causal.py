@@ -111,7 +111,8 @@ class PCFitResponse(BaseModel):
 class FusedGraphResponse(BaseModel):
     status: str
     total_edges: int
-    confirmed_edges: int      # in both Granger and PC
+    confirmed_edges: int      # in both Granger and PC, same direction
+    granger_pc_undirected_edges: int = 0  # PC skeleton ⇒ corroborated, direction from Granger
     granger_only_edges: int
     pc_only_edges: int
     conflict_edges: int
@@ -259,6 +260,7 @@ async def fuse_granger_pc(payload: GrangerEdgesPayload):
         status="ok",
         total_edges=len(fused),
         confirmed_edges=method_counts.get("confirmed", 0),
+        granger_pc_undirected_edges=method_counts.get("granger_pc_undirected", 0),
         granger_only_edges=method_counts.get("granger_only", 0),
         pc_only_edges=method_counts.get("pc_only", 0),
         conflict_edges=method_counts.get("conflict", 0),
