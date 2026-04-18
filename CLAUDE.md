@@ -2,8 +2,7 @@
 
 ## Inventor & Ownership
 
-- **Inventor:** Krishna Kumar Gattupalli
-- **Assignee:** Invences Inc., Frisco, Texas
+- **Inventor:** Krishna Kumar Gattupalli (independent; no assignee)
 - **Repo:** github.com/gattupallik/causal5g (private)
 - **Local path:** ~/causal5g
 
@@ -147,8 +146,7 @@ Coverage: <delta>
 ## Related Context
 
 - **IEEE ISEC 2026:** Upcoming presentation at Princeton. Do not use "Causal5G" or disclose the PC-algorithm mechanism until provisional is filed.
-- **Invences Inc:** The assignee; Technical Director Krishna runs this as a protected-IP project.
-- **H1B status:** Active constraint on any IP-assignment paperwork; all patents are assigned to Invences, not held personally.
+- **H1B status:** Active constraint on any IP-assignment paperwork; this is a personally-filed independent patent. Confirm inventor/assignee choice with patent and immigration counsel before filing, as employer IP-assignment agreements and H1B specialty-occupation rules may still have claims on the invention.
 
 ---
 
