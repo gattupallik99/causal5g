@@ -77,6 +77,14 @@ class CausalAttributionScorer:
         AttributionResult with root cause type, node, and affected slices
         """
         scores = self._pagerank_attribution(causal_graph, anomaly_node)
+        if not scores:
+            return AttributionResult(
+                root_cause_type=RootCauseType.UNDETERMINED,
+                root_cause_node=anomaly_node,
+                attribution_score=0.0,
+                affected_snssais=[],
+                confidence=0.0,
+            )
         top_node, top_score = max(scores.items(), key=lambda x: x[1])
         affected_slices = self._get_affected_slices(top_node, bilevel_dag)
         root_cause_type = self._classify(top_node, top_score, affected_slices,

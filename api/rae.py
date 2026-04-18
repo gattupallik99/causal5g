@@ -312,10 +312,10 @@ async def trigger_remediation(
 # ---------------------------------------------------------------------------
 
 class RemediateRequest(BaseModel):
-    fault_scenario: str            = Field(..., example="nrf_crash")
-    root_cause_nf:  str            = Field(..., example="nrf")
-    rcsm_score:     float          = Field(..., ge=0.0, le=1.0, example=0.82)
-    slice_id:       str | None     = Field(None, example="1-000001")
+    fault_scenario: str            = Field(..., json_schema_extra={"example": "nrf_crash"})
+    root_cause_nf:  str            = Field(..., json_schema_extra={"example": "nrf"})
+    rcsm_score:     float          = Field(..., ge=0.0, le=1.0, json_schema_extra={"example": 0.82})
+    slice_id:       str | None     = Field(None, json_schema_extra={"example": "1-000001"})
     attempt:        int            = Field(0, ge=0, le=3, description="0=preferred action, 1+=fallback")
 
 
