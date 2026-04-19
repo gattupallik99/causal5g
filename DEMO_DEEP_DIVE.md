@@ -376,7 +376,7 @@ In priority order:
 3. **Day 12c coverage: `causal5g/causal/pcmci.py`** - the last 0% module. ~59 statements.
 4. **Production K8s client integration** in `RemediationExecutor._do_*` handlers. Interface contract is fixed; tests pass against the stubs; replacing stub bodies with `kubernetes` Python client calls is a mechanical swap.
 5. **Implement `CrossDomainEdgeInferrer._test_independence`** (currently `NotImplementedError`). Partial correlation with lag sweep, per the placeholder docstring.
-6. **Prometheus exporter polish** for ISEC 2026 Princeton presentation. Do not present the Causal5G mechanism before the provisional is filed.
+6. **Prometheus exporter polish** for observability of the running pipeline.
 
 ---
 

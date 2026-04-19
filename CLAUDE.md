@@ -32,7 +32,7 @@ Provisional is filed, so public references are now acceptable with the following
 **Safe to disclose publicly (with "patent pending" attribution):**
 - The name "Causal5G"
 - High-level mechanism: bi-level DAG, four-domain hierarchy, confidence-gated remediation, feedback recalibration
-- IEEE ISEC 2026 (Princeton) presentation, blog posts, LinkedIn, arXiv
+- Blog posts, LinkedIn, arXiv
 
 **Still sensible to hold back until non-provisional filing strategy is decided:**
 - Exact claim language (verbatim from the provisional)
@@ -132,14 +132,14 @@ Coverage: <delta>
 
 ## Current Priorities (top to bottom)
 
-Provisional is filed. Focus shifts to hardening the reduction-to-practice and preparing the non-provisional / ISEC 2026 story.
+Provisional is filed. Focus shifts to hardening the reduction-to-practice and preparing the non-provisional.
 
 1. **Coverage expansion — last 0% module:**
    - `causal5g/causal/pcmci.py` (0%) — Claim 4
    - Already closed in Day 12a-b: `cross_domain.py`, `hierarchical_dag.py`, `discovery.py`
 2. **Wire the four unmounted routers into `api/frg.py`:** `api/rae.py`, `api/slice_router.py`, `api/pc_causal.py`, `api/control.py` — all define `APIRouter` with a `prefix` but `include_router` is never called. Section 3 of `DEMO_DEEP_DIVE.md` has the 4-line fix.
 3. **Production K8s client integration** — wire the `kubernetes` Python client into `causal5g/remediation/executor.py` `_do_*` handlers. Keep interface contract intact (tests must still pass).
-4. **Prometheus metrics exporter** — observability story for ISEC 2026.
+4. **Prometheus metrics exporter** — observability for the running pipeline.
 5. **Non-provisional prep** — claim language review, figure refinement, continuation-in-part scoping on anything built after the provisional filing date.
 
 ## Communication Style
@@ -154,7 +154,6 @@ Provisional is filed. Focus shifts to hardening the reduction-to-practice and pr
 
 ## Related Context
 
-- **IEEE ISEC 2026:** Upcoming presentation at Princeton. Post-filing, "Causal5G" and the bi-level DAG mechanism can be referenced with "patent pending" attribution. Hold verbatim claim language until non-provisional strategy is decided.
 - **H1B status:** Personally-filed independent patent, no employer assignee. Keep patent + immigration counsel in the loop on any IP-assignment question for the non-provisional, especially if employer-related work during H1B specialty-occupation hours could later be challenged as having claims on the invention.
 
 ---

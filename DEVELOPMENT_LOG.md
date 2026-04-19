@@ -407,7 +407,6 @@ causal5g/
 3. **Implement `verifier.py`** — post-remediation verification: re-score RCSM after action, confirm fault cleared
 4. **Implement `rca/report.py`** — structured RCA report with causal chain, root cause NF, confidence, remediation taken
 5. **Fix Pydantic V2 deprecation warnings** — `Field(example=...)` → `Field(json_schema_extra={...})`
-6. **IEEE ISEC 2026 Princeton prep** — observability metrics, Prometheus exporter, DAG stability benchmarks
 
 ---
 
@@ -795,7 +794,7 @@ Demo: `python3 scripts/patent_demo_v_structure.py` produces
 Provisional-era hardening phase begins. Next: close the last 0% module
 (`causal5g/causal/pcmci.py`), wire the production `kubernetes` client into
 `causal5g/remediation/executor.py`, and draft the Prometheus exporter for
-the ISEC 2026 observability story.
+observability of the running pipeline.
 
 ---
 
@@ -893,7 +892,7 @@ Coverage: causal5g/causal/pcmci.py   0% -> 100%
 All four claims are now both reduced to practice AND exercised by
 coverage. Next non-provisional-relevant work: production `kubernetes`
 client wiring into `causal5g/remediation/executor.py`, Prometheus
-exporter for ISEC 2026 observability, and non-provisional claim
+exporter for pipeline observability, and non-provisional claim
 language review.
 
 ---
