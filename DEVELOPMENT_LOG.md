@@ -897,5 +897,108 @@ language review.
 
 ---
 
+## Day 12e (2026-04-18): Pre-Demo Pipeline Hardening — Constant-Column Guard (Claim 1, Claim 3)
+
+### Bug Under Investigation
+
+During a dry-run of the Docker Desktop live demo path, a regression was
+identified in the live Granger pipeline at
+`causal/engine/granger.py::GrangerCausalityEngine.test_pair`. When a
+fault scenario is held long enough for a telemetry column to flatline
+(typical for the `stale-session` and `nrf-heartbeat-loss` injectors
+documented in Day 7), the affected series enters Granger analysis with
+zero variance. Downstream, `statsmodels.tsa.stattools.adfuller` and
+`grangercausalitytests` both raise `LinAlgError` on flat input. The
+existing bare `except Exception` handler caught the error but did not
+prevent re-entry on the next `analyze()` cycle, so uvicorn pegged at
+~100 percent CPU for as long as the column stayed flat. That was
+latent; it was not visible in the test suite because no fixture ever
+produced a truly constant series, and it would only have surfaced
+during the live demo when a fault was injected and then left in place
+for more than one analysis window.
+
+This is important for Claim 3. The closed-loop remediation path depends
+on `analyze()` returning a timely `GrangerResult` after each scrape
+cycle. If the engine stalls on flat input, the policy table is never
+consulted and remediation never fires. The guard is therefore a
+prerequisite for demonstrating the confidence-gated closed loop under
+realistic fault-then-remediate timing.
+
+### Fix
+
+Two defenses in depth, both in `causal/engine/granger.py`:
+
+1. **Pre-stationarization guard.** `test_pair` now short-circuits and
+   returns `None` if either input series fails `_has_variance()`, a new
+   classmethod that wraps `numpy.std` with finiteness and size checks
+   and compares against class-level tolerance `_VAR_TOL = 1e-10`.
+2. **Post-stationarization guard.** A perfectly linear input has
+   non-zero raw variance but becomes constant after first-differencing.
+   The same `_has_variance()` check is repeated after `make_stationary`
+   so a monotonic ramp (e.g. a cumulative counter with no resets) also
+   bails out cleanly.
+
+Both guards fire before any statsmodels code runs, eliminating the
+retry loop at its source rather than relying on the outer exception
+handler to swallow `LinAlgError` every cycle.
+
+### Code Changes
+
+```
+causal/engine/granger.py
+  + class-level _VAR_TOL = 1e-10
+  + classmethod _has_variance(series) -> bool
+  + test_pair: pre-stationarization guard
+  + test_pair: post-stationarization guard
+```
+
+### Tests
+
+```
+tests/test_granger.py  (new, 15 tests)
+  TestHasVariance              (8 tests)
+  TestConstantColumnGuard      (6 tests)
+    - test_constant_cause_returns_none_without_calling_statsmodels
+      asserts grangercausalitytests is monkeypatched to raise if ever
+      invoked; the guard must short-circuit before that line.
+    - test_linear_cause_returns_none_after_post_diff_guard
+      explicitly forces the post-differencing path via is_stationary
+      monkeypatch, confirming both guards are exercised.
+  TestAnalyzeResilienceOnFlatBuffer (1 test)
+    End-to-end: TelemetryBuffer with one flat series across two NFs;
+    analyze() must complete without raising.
+```
+
+### Results
+
+```
+Tests:    sandbox full suite 280 passed (was 265; +15 new)
+          User Mac full suite expected: 277 passed (was 262; +15 new)
+Coverage: causal/engine/granger.py — guard paths now covered.
+Runtime:  test_pair returns in micro-seconds for constant input
+          instead of calling into adfuller + LinAlgError catch.
+```
+
+### Demo Impact
+
+Live Docker Desktop demo is now safe to run with any fault held for
+arbitrary duration. Previously, any fault that flatlined a column
+would gradually degrade the dashboard's responsiveness; now the engine
+simply skips the affected pair and continues.
+
+### Claim Status After Day 12e
+
+| Claim | Status |
+|-------|--------|
+| Claim 1 | Reduced to practice; live Granger pipeline now resilient to constant-column input |
+| Claim 2 | Reduced to practice |
+| Claim 3 | Reduced to practice; closed-loop timing no longer vulnerable to pipeline stall under sustained faults |
+| Claim 4 | Reduced to practice |
+
+Next: live demo dry-run on Docker Desktop, then resume K8s client
+integration in `causal5g/remediation/executor.py`.
+
+---
+
 *This log is maintained as part of the patent evidence record for the Causal5G provisional patent application.*  
 *© 2026 Krishna Kumar Gattupalli. All rights reserved. CONFIDENTIAL.*

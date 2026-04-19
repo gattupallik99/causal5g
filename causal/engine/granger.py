@@ -140,9 +140,32 @@ class GrangerCausalityEngine:
     temporal precedence relationships between NF telemetry streams.
     """
 
+    # Any std below this is treated as "constant" for Granger purposes.
+    # adfuller and statsmodels OLS both raise LinAlgError on zero-variance
+    # columns, which in the live pipeline produced a tight retry loop that
+    # pegged uvicorn at 100% CPU when a fault stayed injected long enough
+    # for a telemetry column to flatline. See test_granger.py
+    # TestConstantColumnGuard for regression coverage.
+    _VAR_TOL = 1e-10
+
     def __init__(self, max_lag: int = 5, significance: float = 0.05):
         self.max_lag = max_lag
         self.significance = significance
+
+    @classmethod
+    def _has_variance(cls, series) -> bool:
+        """True iff the series has non-trivial, finite variance."""
+        if series is None:
+            return False
+        try:
+            arr = np.asarray(series, dtype=float)
+        except (TypeError, ValueError):
+            return False
+        if arr.size < 2:
+            return False
+        if not np.isfinite(arr).all():
+            return False
+        return float(np.std(arr)) > cls._VAR_TOL
 
     def is_stationary(self, series: list[float]) -> bool:
         """
@@ -168,12 +191,26 @@ class GrangerCausalityEngine:
         Test if cause_series Granger-causes effect_series.
         Returns CausalLink if significant, None otherwise.
         """
+        # Zero-variance guard (input). adfuller and grangercausalitytests
+        # both hit LinAlgError on flat input, and the bare except below was
+        # catching it but leaving the caller to retry on every analyze()
+        # cycle. Short-circuit here so flat telemetry never reaches
+        # statsmodels.
+        if not self._has_variance(cause_series) or not self._has_variance(effect_series):
+            return None
+
         try:
             # Ensure stationarity
             x = cause_series if self.is_stationary(cause_series) \
                 else self.make_stationary(cause_series)
             y = effect_series if self.is_stationary(effect_series) \
                 else self.make_stationary(effect_series)
+
+            # Zero-variance guard (post-differencing). A perfectly linear
+            # input becomes constant after first-differencing; catch that
+            # second failure mode before statsmodels does.
+            if not self._has_variance(x) or not self._has_variance(y):
+                return None
 
             # Align lengths
             min_len = min(len(x), len(y))
