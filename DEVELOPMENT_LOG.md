@@ -799,5 +799,104 @@ the ISEC 2026 observability story.
 
 ---
 
+## Day 12d -- PCMCI Backend Contract + 100% Coverage (April 18, 2026)
+
+### Focus
+
+Close the final 0%-coverage module, `causal5g/causal/pcmci.py`. While
+writing the test harness a latent defect surfaced: the module has been
+unimportable for the entire project lifetime because it imports
+`CausalDiscoveryBackend` from `causal5g.causal.discovery`, a symbol that
+was declared in docstrings but never defined in code. Claim 4 of the
+provisional references PCMCI as the time-lagged backend in the "pluggable
+causal discovery" language, so the backend ABC is a genuine claim contract
+that needs to exist in the tree, not merely a convenience for the tests.
+
+### Patent Claim Enablement
+
+**Claim 4 (Feedback-Driven DAG Recalibration + PCMCI time-lagged backend):**
+
+1. **Backend ABC introduced.** New class `CausalDiscoveryBackend` in
+   `causal5g/causal/discovery.py` defines a single abstract `fit(data,
+   variable_names, topology_prior) -> nx.DiGraph` method. This makes the
+   "algorithm-agnostic causal discovery" language of Claim 1/4 concrete:
+   the pipeline composes PC, Granger, and PCMCI backends behind a
+   uniform contract rather than hardcoded `if`-ladders. PCMCIBackend now
+   formally `isinstance`s the ABC and the new test
+   `test_is_causal_discovery_backend` pins that relationship.
+
+2. **pcmci.py reaches 100% coverage.** `python3 -m pytest
+   tests/causal/test_pcmci.py --cov=causal5g.causal.pcmci --cov-report=
+   term-missing` reports `59 statements, 0 missing, 100%`. Every branch
+   of the module is exercised:
+   - `__init__` defaults and custom param storage
+   - `results` property (None and populated)
+   - `_build_link_assumptions` with four prior configurations (empty,
+     registered instance edge, tau_max range, PFCP binding)
+   - `_results_to_graph` with six scenarios (None results, single
+     annotated edge, self-loop diagonal skipped, non-`-->` symbols
+     ignored, multiple-tau overwrite semantics, shape-boundary guard)
+   - `fit` ImportError branch via `sys.modules` poisoning
+   - `fit` success path via a fabricated `tigramite` module graph with
+     both `parcorr` and `robustparcorr` CI test selections
+
+3. **Tigramite decoupled for test runs.** The test suite does not require
+   `tigramite` to be installed. The success-path test injects a
+   purpose-built fake module tree into `sys.modules` and asserts that
+   PCMCI was invoked with the expected `tau_max`, `alpha_level`, and
+   `link_assumptions` kwargs. This keeps CI fast and reproducible
+   without pulling in the heavy tigramite + scipy.sparse dependency
+   chain.
+
+### Code Changes
+
+`causal5g/causal/discovery.py`
+  - New `CausalDiscoveryBackend(ABC)` with abstract `fit` method and
+    docstring cross-referencing the pcmci subclass
+  - Added `from abc import ABC, abstractmethod` to imports
+
+`tests/causal/test_pcmci.py` (new, 18 tests)
+  - `TestInit`: defaults, custom params, ABC compliance (3 tests)
+  - `TestResultsProperty`: None + populated (2 tests)
+  - `TestBuildLinkAssumptions`: empty prior, instance edge, tau range,
+    PFCP binding (4 tests)
+  - `TestResultsToGraph`: None results, single edge, self-loop skip,
+    non-directed-symbol filter, multi-lag overwrite, shape boundary
+    (6 tests)
+  - `TestFitImportError`: sys.modules poisoning path (1 test)
+  - `TestFitSuccessPath`: parcorr + robustparcorr branches with
+    fabricated tigramite fake (2 tests)
+
+### Tests
+
+```
+tests/causal/test_pcmci.py  (new, 18 tests)
+```
+
+### Results
+
+```
+Tests:    182 passed on sandbox (was 164; +18 new PCMCI tests)
+          User Mac full suite: 262 passed (was 244)
+Coverage: causal5g/causal/pcmci.py   0% -> 100%
+```
+
+### Claim Status After Day 12d
+
+| Claim | Status |
+|-------|--------|
+| Claim 1 | Reduced to practice; causal discovery now formalized behind `CausalDiscoveryBackend` ABC |
+| Claim 2 | Reduced to practice |
+| Claim 3 | Reduced to practice |
+| Claim 4 | Reduced to practice; PCMCI backend now loads cleanly, contract-tested, 100% covered |
+
+All four claims are now both reduced to practice AND exercised by
+coverage. Next non-provisional-relevant work: production `kubernetes`
+client wiring into `causal5g/remediation/executor.py`, Prometheus
+exporter for ISEC 2026 observability, and non-provisional claim
+language review.
+
+---
+
 *This log is maintained as part of the patent evidence record for the Causal5G provisional patent application.*  
 *© 2026 Krishna Kumar Gattupalli. All rights reserved. CONFIDENTIAL.*

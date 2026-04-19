@@ -10,6 +10,7 @@ duplicate their internal logic.
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Tuple
@@ -25,6 +26,54 @@ class DiscoveryMethod(str, Enum):
     PC = "pc"
     GRANGER = "granger"
     FUSED = "fused"
+
+
+class CausalDiscoveryBackend(ABC):
+    """
+    Claim 4 — Algorithm-agnostic backend contract for causal discovery.
+
+    Pluggable backends implement a single `fit` method that consumes a
+    telemetry data array plus a topology prior and returns an annotated
+    `nx.DiGraph`. The contract is deliberately minimal so a single pipeline
+    can swap between constraint-based (PC), temporal (Granger), and
+    time-lagged (PCMCI) discovery without leaking algorithm-specific
+    details into the caller.
+
+    Subclasses currently in the tree:
+      - `causal5g.causal.pcmci.PCMCIBackend` — Claim 4 time-lagged DAG
+
+    Subclasses should annotate returned edges with algorithm-specific
+    attributes (e.g. ``tau``, ``weight``, ``p_value``) so the fusion and
+    reporting layers can consume them uniformly.
+    """
+
+    @abstractmethod
+    def fit(
+        self,
+        data: "np.ndarray",
+        variable_names: List[str],
+        topology_prior: "object",
+    ) -> "nx.DiGraph":
+        """Run causal discovery and return an annotated graph.
+
+        Parameters
+        ----------
+        data : np.ndarray, shape (T, N)
+            Time-series telemetry matrix (T time steps, N variables).
+        variable_names : list of str, length N
+            Column labels for ``data``.
+        topology_prior : causal5g.graph.topology_prior.TopologyPrior
+            Structural prior restricting candidate causal edges to
+            3GPP-valid SBI / PFCP pairs. Typed as ``object`` here to
+            avoid a circular import; subclasses validate at call time.
+
+        Returns
+        -------
+        nx.DiGraph
+            Nodes are the variable names; edges carry algorithm-specific
+            attributes (see subclass docstrings).
+        """
+        raise NotImplementedError
 
 
 @dataclass
