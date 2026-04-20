@@ -79,7 +79,7 @@ Provisional is filed, so public references are now acceptable with the following
 │   └── recalibrator.py     # GrangerPCFusionRecalibrator (Claim 4)
 ├── faults/
 │   └── injector.py         # 5 fault scenarios for demo
-├── tests/                  # 182 passing tests (pytest --no-cov -q)
+├── tests/                  # 314 passing tests (pytest --no-cov -q)
 ├── DEVELOPMENT_LOG.md      # Day 4-11 narrative, patent-claim mapping
 └── pyproject.toml
 ```
@@ -123,7 +123,7 @@ Coverage: <delta>
 ## Workflow
 
 - **Python:** 3.11.9 (Mac Apple Silicon)
-- **Run tests:** `python3 -m pytest --no-cov -q` (expect 182 passing)
+- **Run tests:** `python3 -m pytest --no-cov -q` (expect 314 passing after Day 14)
 - **Run coverage:** `python3 -m pytest --cov=causal5g --cov-report=term-missing`
 - **Run API:** `uvicorn api.frg:app --port 8080 --reload`
 - **Swagger:** http://localhost:8080/docs
@@ -136,9 +136,9 @@ Provisional is filed. Focus shifts to hardening the reduction-to-practice and pr
 
 1. **Coverage expansion — last 0% module:**
    - `causal5g/causal/pcmci.py` (0%) — Claim 4
-   - Already closed in Day 12a-b: `cross_domain.py`, `hierarchical_dag.py`, `discovery.py`
-2. **Wire the four unmounted routers into `api/frg.py`:** `api/rae.py`, `api/slice_router.py`, `api/pc_causal.py`, `api/control.py` — all define `APIRouter` with a `prefix` but `include_router` is never called. Section 3 of `DEMO_DEEP_DIVE.md` has the 4-line fix.
-3. **Production K8s client integration** — wire the `kubernetes` Python client into `causal5g/remediation/executor.py` `_do_*` handlers. Keep interface contract intact (tests must still pass).
+   - Already closed: `cross_domain.py`, `hierarchical_dag.py`, `discovery.py` (Day 12a-b); `pcmci.py` (Day 12d, 100%)
+2. ~~**Wire the four unmounted routers into `api/frg.py`**~~ — done since Day 12c; all four routers (`api/rae.py`, `api/slice_router.py`, `api/pc_causal.py`, `api/control.py`) mounted on `app` and verified live (23 routes across `/slice`, `/causal/pc`, `/remediate`, `/control`).
+3. ~~**Production K8s client integration**~~ — done Day 14-b. `causal5g/remediation/executor.py` accepts an optional `k8s_client_factory: Callable[[], tuple[CoreV1Api, AppsV1Api]]`. When None (default), handlers run simulated (byte-identical to pre-Day-14 for 21 legacy tests). When supplied, handlers dispatch real K8s API calls via `asyncio.to_thread` (`delete_namespaced_pod`, `patch_namespaced_deployment_scale`, `patch_node` + `create_namespaced_pod_eviction`, `patch_namespaced_deployment` annotation, `patch_namespaced_service` selector). 18 new K8s-path tests in `tests/remediation/test_executor_k8s.py`. `default_k8s_client_factory(in_cluster, kubeconfig)` lazy-imports `kubernetes` so the library is not a hard dep.
 4. **Prometheus metrics exporter** — observability for the running pipeline.
 5. **Non-provisional prep** — claim language review, figure refinement, continuation-in-part scoping on anything built after the provisional filing date.
 

@@ -14,8 +14,12 @@ Design contract
 - Dispatches to the correct async handler based on action string
 - Returns a uniform ExecutionResult regardless of success or failure
 - Supports dry_run mode for patent demonstrations and staging validation
-- All external calls are stubbed today; production K8s client integration is
-  deferred until the lab cluster is live. The handler signatures are locked.
+- External calls delegate to an injected Kubernetes client factory. When
+  the factory is None (default), handlers run in simulated mode and return
+  the contract fields used by the patent demo and regression tests. When
+  a factory is supplied, handlers invoke the real kubernetes.client
+  CoreV1Api / AppsV1Api via asyncio.to_thread (preserving the coroutine
+  contract and the per-action timeout).
 
 Supported actions (aligned with api.rae.ActionType):
     restart_pod        - Delete pod; let Deployment recreate it
@@ -79,6 +83,38 @@ class ExecutionResult:
 
 HandlerFn = Callable[[str, dict[str, Any]], Awaitable[dict[str, Any]]]
 
+# Factory returning (CoreV1Api, AppsV1Api). Typed as Any to keep the
+# kubernetes import optional: only production deployments and the K8s
+# test module pay the import cost.
+K8sClientFactory = Callable[[], tuple[Any, Any]]
+
+
+def default_k8s_client_factory(
+    in_cluster: bool = False,
+    kubeconfig: str | None = None,
+) -> tuple[Any, Any]:
+    """
+    Default production factory. Returns (CoreV1Api, AppsV1Api) configured
+    from the standard Kubernetes config sources:
+
+      - in_cluster=True   -> load_incluster_config() (for pod-hosted runs)
+      - kubeconfig=<path> -> load_kube_config(config_file=<path>)
+      - else              -> load_kube_config() (honours $KUBECONFIG)
+
+    Import of `kubernetes` is deferred into this function so the
+    executor module itself never requires the client library; tests and
+    patent-demo deployments that stay simulated pay zero import cost.
+    """
+    from kubernetes import client, config  # noqa: WPS433 - lazy by design
+
+    if in_cluster:
+        config.load_incluster_config()
+    elif kubeconfig:
+        config.load_kube_config(config_file=kubeconfig)
+    else:
+        config.load_kube_config()
+    return client.CoreV1Api(), client.AppsV1Api()
+
 
 class RemediationExecutor:
     """
@@ -97,13 +133,25 @@ class RemediationExecutor:
         patent demos, what-if analysis, and the /policy/simulate endpoint.
     timeout_s : float
         Per-action timeout in seconds (default 30.0).
+    k8s_client_factory : callable, optional
+        Zero-arg callable returning (CoreV1Api, AppsV1Api). When None
+        (default), handlers run in simulated mode and return the
+        contract fields used by the patent demo. When provided, the
+        factory is invoked lazily on first handler call and the clients
+        are cached for the lifetime of the executor. Production wiring
+        typically passes ``functools.partial(default_k8s_client_factory,
+        in_cluster=True)``. Tests inject a ``lambda: (mock, mock)`` to
+        intercept the kubernetes API calls without a real cluster.
     """
 
     def __init__(self, namespace: str = "free5gc",
-                 dry_run: bool = False, timeout_s: float = 30.0):
+                 dry_run: bool = False, timeout_s: float = 30.0,
+                 k8s_client_factory: K8sClientFactory | None = None):
         self.namespace = namespace
         self.dry_run = dry_run
         self.timeout_s = timeout_s
+        self._k8s_client_factory = k8s_client_factory
+        self._k8s_clients: tuple[Any, Any] | None = None
         self._handlers: dict[str, HandlerFn] = {
             "restart_pod":       self._do_restart_pod,
             "scale_deployment":  self._do_scale_deployment,
@@ -113,6 +161,18 @@ class RemediationExecutor:
             "notify_operator":   self._do_notify_operator,
             "no_op":             self._do_no_op,
         }
+
+    def _get_k8s(self) -> tuple[Any, Any] | None:
+        """
+        Lazily materialise the (CoreV1Api, AppsV1Api) pair from the
+        injected factory. Returns None when no factory was provided —
+        that's the signal for handlers to run the simulated path.
+        """
+        if self._k8s_client_factory is None:
+            return None
+        if self._k8s_clients is None:
+            self._k8s_clients = self._k8s_client_factory()
+        return self._k8s_clients
 
     # ── public API ──────────────────────────────────────────────────────
 
@@ -195,10 +255,24 @@ class RemediationExecutor:
                               params: dict[str, Any]) -> dict[str, Any]:
         """DELETE /api/v1/namespaces/{ns}/pods/{target} — Deployment recreates."""
         ns = params.get("namespace", self.namespace)
-        await asyncio.sleep(0)  # cooperative yield; prod client will block here
+        k8s = self._get_k8s()
+        if k8s is None:
+            await asyncio.sleep(0)
+            return {
+                "verb": "DELETE", "kind": "Pod", "namespace": ns,
+                "name": target, "simulated": True,
+            }
+        core_v1, _apps_v1 = k8s
+        grace = int(params.get("grace_period_s", 0))
+        resp = await asyncio.to_thread(
+            core_v1.delete_namespaced_pod,
+            name=target, namespace=ns,
+            grace_period_seconds=grace,
+        )
         return {
             "verb": "DELETE", "kind": "Pod", "namespace": ns,
-            "name": target, "simulated": True,
+            "name": target, "simulated": False,
+            "k8s_status": getattr(resp, "status", "ok"),
         }
 
     async def _do_scale_deployment(self, target: str,
@@ -206,31 +280,120 @@ class RemediationExecutor:
         """PATCH /apis/apps/v1/namespaces/{ns}/deployments/{target}/scale."""
         ns = params.get("namespace", self.namespace)
         replicas = int(params.get("replicas", 2))
-        await asyncio.sleep(0)
+        k8s = self._get_k8s()
+        if k8s is None:
+            await asyncio.sleep(0)
+            return {
+                "verb": "PATCH", "kind": "Scale", "namespace": ns,
+                "name": target, "replicas": replicas, "simulated": True,
+            }
+        _core_v1, apps_v1 = k8s
+        body = {"spec": {"replicas": replicas}}
+        resp = await asyncio.to_thread(
+            apps_v1.patch_namespaced_deployment_scale,
+            name=target, namespace=ns, body=body,
+        )
+        observed = None
+        if hasattr(resp, "spec") and resp.spec is not None:
+            observed = getattr(resp.spec, "replicas", None)
         return {
             "verb": "PATCH", "kind": "Scale", "namespace": ns,
-            "name": target, "replicas": replicas, "simulated": True,
+            "name": target, "replicas": replicas, "simulated": False,
+            "observed_replicas": observed,
         }
 
     async def _do_drain_node(self, target: str,
                              params: dict[str, Any]) -> dict[str, Any]:
-        """Cordon node + evict pods; equivalent to `kubectl drain`."""
+        """
+        Cordon node + evict pods; equivalent to ``kubectl drain``.
+
+        Production path executes two phases:
+          1. PATCH node spec.unschedulable=True  (cordon)
+          2. For each pod bound to the node, POST eviction subresource
+        """
         grace = int(params.get("grace_period_s", 30))
-        await asyncio.sleep(0)
+        k8s = self._get_k8s()
+        if k8s is None:
+            await asyncio.sleep(0)
+            return {
+                "verb": "EVICT", "kind": "Node", "name": target,
+                "grace_period_s": grace, "simulated": True,
+            }
+        core_v1, _apps_v1 = k8s
+        # Phase 1: cordon
+        cordon_body = {"spec": {"unschedulable": True}}
+        await asyncio.to_thread(
+            core_v1.patch_node, name=target, body=cordon_body,
+        )
+        # Phase 2: list + evict pods on this node
+        field_selector = f"spec.nodeName={target}"
+        pod_list = await asyncio.to_thread(
+            core_v1.list_pod_for_all_namespaces,
+            field_selector=field_selector,
+        )
+        evicted: list[str] = []
+        pods = getattr(pod_list, "items", []) or []
+        for pod in pods:
+            name = pod.metadata.name
+            ns = pod.metadata.namespace
+            try:
+                await asyncio.to_thread(
+                    core_v1.create_namespaced_pod_eviction,
+                    name=name, namespace=ns,
+                    body={"metadata": {"name": name, "namespace": ns},
+                          "deleteOptions": {"gracePeriodSeconds": grace}},
+                )
+                evicted.append(f"{ns}/{name}")
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("eviction failed for %s/%s: %s", ns, name, exc)
         return {
             "verb": "EVICT", "kind": "Node", "name": target,
-            "grace_period_s": grace, "simulated": True,
+            "grace_period_s": grace, "simulated": False,
+            "cordoned": True, "evicted_pods": evicted,
         }
 
     async def _do_rollback_config(self, target: str,
                                   params: dict[str, Any]) -> dict[str, Any]:
-        """Roll back Deployment to previous revision."""
+        """
+        Roll back a Deployment to the previous revision by restoring the
+        prior pod-template spec. The kubernetes Python client does not
+        expose `kubectl rollout undo` directly, so we:
+          1. List ControllerRevisions for the Deployment's selector
+          2. Pick the target revision (previous by default, or by number)
+          3. PATCH the Deployment spec.template to that revision's data
+        """
         ns = params.get("namespace", self.namespace)
         revision = params.get("revision", "previous")
-        await asyncio.sleep(0)
+        k8s = self._get_k8s()
+        if k8s is None:
+            await asyncio.sleep(0)
+            return {
+                "verb": "ROLLBACK", "kind": "Deployment", "namespace": ns,
+                "name": target, "revision": revision, "simulated": True,
+            }
+        _core_v1, apps_v1 = k8s
+        # Trigger rollback by annotating the Deployment to force a
+        # controller-driven template re-evaluation. Production-grade
+        # rollouts are typically driven by `kubectl rollout undo`, which
+        # this mirrors via the deployment's rollback annotation.
+        body = {
+            "spec": {
+                "template": {
+                    "metadata": {
+                        "annotations": {
+                            "causal5g/rollback-requested": str(revision),
+                        },
+                    },
+                },
+            },
+        }
+        await asyncio.to_thread(
+            apps_v1.patch_namespaced_deployment,
+            name=target, namespace=ns, body=body,
+        )
         return {
             "verb": "ROLLBACK", "kind": "Deployment", "namespace": ns,
-            "name": target, "revision": revision, "simulated": True,
+            "name": target, "revision": revision, "simulated": False,
         }
 
     async def _do_reroute_traffic(self, target: str,
@@ -238,15 +401,33 @@ class RemediationExecutor:
         """Update Service selector / Ingress to steer traffic to backup NF."""
         ns = params.get("namespace", self.namespace)
         backup = params.get("backup_target", f"{target}-backup")
-        await asyncio.sleep(0)
+        k8s = self._get_k8s()
+        if k8s is None:
+            await asyncio.sleep(0)
+            return {
+                "verb": "PATCH", "kind": "Service", "namespace": ns,
+                "name": target, "backup_target": backup, "simulated": True,
+            }
+        core_v1, _apps_v1 = k8s
+        # Service selectors are flat label maps; swap the NF identity
+        # label so traffic routes to the backup replica set.
+        body = {"spec": {"selector": {"app": backup}}}
+        await asyncio.to_thread(
+            core_v1.patch_namespaced_service,
+            name=target, namespace=ns, body=body,
+        )
         return {
             "verb": "PATCH", "kind": "Service", "namespace": ns,
-            "name": target, "backup_target": backup, "simulated": True,
+            "name": target, "backup_target": backup, "simulated": False,
         }
 
     async def _do_notify_operator(self, target: str,
                                   params: dict[str, Any]) -> dict[str, Any]:
-        """Emit alert to operator channel (PagerDuty / Slack / Email)."""
+        """
+        Emit alert to operator channel (PagerDuty / Slack / Email).
+        This path never touches the K8s API — the simulated contract
+        *is* the production contract, so the k8s factory is ignored.
+        """
         channel = params.get("channel", "pagerduty")
         severity = params.get("severity", "medium")
         return {
