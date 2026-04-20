@@ -1,0 +1,8 @@
+=== 2026-04-20T03:29:49Z recovering nrf_crash
+
+=== waiting 20s for pipeline to settle
+=== injecting smf_crash
+
+=== waiting 20s for next analysis cycle
+=== /faults/active after smf_crash
+=== done

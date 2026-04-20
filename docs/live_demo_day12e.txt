@@ -1,0 +1,382 @@
+=== 2026-04-20T03:43:25Z baseline
+{
+    "status": "healthy",
+    "pipeline_running": true,
+    "cycle_count": 136,
+    "buffer_fill_pct": 100.0,
+    "analysis_count": 12,
+    "active_faults": [],
+    "uptime_since": "2026-04-20T03:32:03.670311+00:00"
+}
+=== injecting nrf_crash
+{"status":"injected","scenario":"nrf_crash","target_nf":"nrf","severity":"CRITICAL","description":"NRF registry crash - all NFs lose discovery","expected_impact":["amf","smf","pcf","udm","ausf","nssf"],"timestamp":"2026-04-20T03:43:28.000902+00:00","next_analysis_in":"15s","watch":"GET /faults/active to see root cause shift"}
+=== /faults/active after nrf_crash
+{
+    "status": "ok",
+    "active_injections": [
+        "nrf_crash"
+    ],
+    "report": {
+        "report_id": "FR-0013-20260420034341",
+        "timestamp": "2026-04-20T03:43:41.472153+00:00",
+        "severity": "CRITICAL",
+        "fault_category": "Communications Alarm - NF Registry Failure",
+        "affected_nfs": [
+            "nrf",
+            "amf",
+            "smf",
+            "pcf",
+            "udm",
+            "udr",
+            "ausf",
+            "nssf"
+        ],
+        "causal_chain": [
+            "nrf"
+        ],
+        "recommended_action": "Restart NRF immediately. Check MongoDB connectivity. Verify NF re-registration after recovery.",
+        "telemetry_window_cycles": 60,
+        "root_cause": {
+            "nf_id": "nrf",
+            "nf_type": "NRF",
+            "rank": 1,
+            "composite_score": 0.7,
+            "centrality_score": 1.0,
+            "temporal_score": 0.0,
+            "bayesian_score": 1.0,
+            "confidence": 1.0,
+            "fault_category": "Communications Alarm - NF Registry Failure",
+            "evidence": [
+                "NF unreachable (reachability=0)"
+            ],
+            "causal_path": [
+                "nrf"
+            ]
+        },
+        "all_candidates": [
+            {
+                "nf_id": "nrf",
+                "rank": 1,
+                "composite_score": 0.7,
+                "centrality_score": 1.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 1.0,
+                "confidence": 1.0
+            },
+            {
+                "nf_id": "udm",
+                "rank": 2,
+                "composite_score": 0.3744,
+                "centrality_score": 0.4074,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7048,
+                "confidence": 0.7488
+            },
+            {
+                "nf_id": "smf",
+                "rank": 3,
+                "composite_score": 0.3673,
+                "centrality_score": 0.3889,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7059,
+                "confidence": 0.7346
+            },
+            {
+                "nf_id": "amf",
+                "rank": 4,
+                "composite_score": 0.3624,
+                "centrality_score": 0.3333,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7636,
+                "confidence": 0.7248
+            },
+            {
+                "nf_id": "ausf",
+                "rank": 5,
+                "composite_score": 0.27,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.9,
+                "confidence": 0.54
+            },
+            {
+                "nf_id": "pcf",
+                "rank": 6,
+                "composite_score": 0.24,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.8,
+                "confidence": 0.48
+            },
+            {
+                "nf_id": "nssf",
+                "rank": 7,
+                "composite_score": 0.165,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.55,
+                "confidence": 0.33
+            },
+            {
+                "nf_id": "udr",
+                "rank": 8,
+                "composite_score": 0.09,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.3,
+                "confidence": 0.18
+            }
+        ]
+    }
+}
+=== recovering nrf_crash
+{"status":"recovering","scenario":"nrf_crash","timestamp":"2026-04-20T03:43:48.520606+00:00","watch":"GET /faults/active to confirm system normalizes"}
+=== injecting smf_crash
+{"status":"injected","scenario":"smf_crash","target_nf":"smf","severity":"HIGH","description":"SMF crash - PDU session establishment fails","expected_impact":["pcf","udm"],"timestamp":"2026-04-20T03:44:08.593133+00:00","next_analysis_in":"25s","watch":"GET /faults/active to see root cause shift"}
+=== /faults/active after smf_crash
+{
+    "status": "ok",
+    "active_injections": [
+        "smf_crash"
+    ],
+    "report": {
+        "report_id": "FR-0013-20260420034341",
+        "timestamp": "2026-04-20T03:43:41.472153+00:00",
+        "severity": "CRITICAL",
+        "fault_category": "Communications Alarm - NF Registry Failure",
+        "affected_nfs": [
+            "nrf",
+            "amf",
+            "smf",
+            "pcf",
+            "udm",
+            "udr",
+            "ausf",
+            "nssf"
+        ],
+        "causal_chain": [
+            "nrf"
+        ],
+        "recommended_action": "Restart NRF immediately. Check MongoDB connectivity. Verify NF re-registration after recovery.",
+        "telemetry_window_cycles": 60,
+        "root_cause": {
+            "nf_id": "nrf",
+            "nf_type": "NRF",
+            "rank": 1,
+            "composite_score": 0.7,
+            "centrality_score": 1.0,
+            "temporal_score": 0.0,
+            "bayesian_score": 1.0,
+            "confidence": 1.0,
+            "fault_category": "Communications Alarm - NF Registry Failure",
+            "evidence": [
+                "NF unreachable (reachability=0)"
+            ],
+            "causal_path": [
+                "nrf"
+            ]
+        },
+        "all_candidates": [
+            {
+                "nf_id": "nrf",
+                "rank": 1,
+                "composite_score": 0.7,
+                "centrality_score": 1.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 1.0,
+                "confidence": 1.0
+            },
+            {
+                "nf_id": "udm",
+                "rank": 2,
+                "composite_score": 0.3744,
+                "centrality_score": 0.4074,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7048,
+                "confidence": 0.7488
+            },
+            {
+                "nf_id": "smf",
+                "rank": 3,
+                "composite_score": 0.3673,
+                "centrality_score": 0.3889,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7059,
+                "confidence": 0.7346
+            },
+            {
+                "nf_id": "amf",
+                "rank": 4,
+                "composite_score": 0.3624,
+                "centrality_score": 0.3333,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7636,
+                "confidence": 0.7248
+            },
+            {
+                "nf_id": "ausf",
+                "rank": 5,
+                "composite_score": 0.27,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.9,
+                "confidence": 0.54
+            },
+            {
+                "nf_id": "pcf",
+                "rank": 6,
+                "composite_score": 0.24,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.8,
+                "confidence": 0.48
+            },
+            {
+                "nf_id": "nssf",
+                "rank": 7,
+                "composite_score": 0.165,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.55,
+                "confidence": 0.33
+            },
+            {
+                "nf_id": "udr",
+                "rank": 8,
+                "composite_score": 0.09,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.3,
+                "confidence": 0.18
+            }
+        ]
+    }
+}
+=== recovering smf_crash
+{"status":"recovering","scenario":"smf_crash","timestamp":"2026-04-20T03:44:29.062940+00:00","watch":"GET /faults/active to confirm system normalizes"}
+=== done 2026-04-20T03:44:29Z
+=== 2026-04-20T03:46:06Z injecting smf_crash (warm buffer)
+{"status":"injected","scenario":"smf_crash","target_nf":"smf","severity":"HIGH","description":"SMF crash - PDU session establishment fails","expected_impact":["pcf","udm"],"timestamp":"2026-04-20T03:46:08.292520+00:00","next_analysis_in":"5s","watch":"GET /faults/active to see root cause shift"}
+=== waiting 60s for next analysis
+=== /faults/active after smf_crash
+{
+    "status": "ok",
+    "active_injections": [
+        "smf_crash"
+    ],
+    "report": {
+        "report_id": "FR-0017-20260420034702",
+        "timestamp": "2026-04-20T03:47:02.453107+00:00",
+        "severity": "CRITICAL",
+        "fault_category": "Communications Alarm - NF Registry Failure",
+        "affected_nfs": [
+            "nrf",
+            "amf",
+            "smf",
+            "pcf",
+            "udm",
+            "udr",
+            "ausf",
+            "nssf"
+        ],
+        "causal_chain": [
+            "nrf"
+        ],
+        "recommended_action": "Restart NRF immediately. Check MongoDB connectivity. Verify NF re-registration after recovery.",
+        "telemetry_window_cycles": 60,
+        "root_cause": {
+            "nf_id": "nrf",
+            "nf_type": "NRF",
+            "rank": 1,
+            "composite_score": 0.7,
+            "centrality_score": 1.0,
+            "temporal_score": 0.0,
+            "bayesian_score": 1.0,
+            "confidence": 1.0,
+            "fault_category": "Communications Alarm - NF Registry Failure",
+            "evidence": [
+                "NF unreachable (reachability=0)"
+            ],
+            "causal_path": [
+                "nrf"
+            ]
+        },
+        "all_candidates": [
+            {
+                "nf_id": "nrf",
+                "rank": 1,
+                "composite_score": 0.7,
+                "centrality_score": 1.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 1.0,
+                "confidence": 1.0
+            },
+            {
+                "nf_id": "udm",
+                "rank": 2,
+                "composite_score": 0.3744,
+                "centrality_score": 0.4074,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7048,
+                "confidence": 0.7488
+            },
+            {
+                "nf_id": "smf",
+                "rank": 3,
+                "composite_score": 0.3673,
+                "centrality_score": 0.3889,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7059,
+                "confidence": 0.7346
+            },
+            {
+                "nf_id": "amf",
+                "rank": 4,
+                "composite_score": 0.3624,
+                "centrality_score": 0.3333,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.7636,
+                "confidence": 0.7248
+            },
+            {
+                "nf_id": "ausf",
+                "rank": 5,
+                "composite_score": 0.27,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.9,
+                "confidence": 0.54
+            },
+            {
+                "nf_id": "pcf",
+                "rank": 6,
+                "composite_score": 0.24,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.8,
+                "confidence": 0.48
+            },
+            {
+                "nf_id": "nssf",
+                "rank": 7,
+                "composite_score": 0.165,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.55,
+                "confidence": 0.33
+            },
+            {
+                "nf_id": "udr",
+                "rank": 8,
+                "composite_score": 0.09,
+                "centrality_score": 0.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.3,
+                "confidence": 0.18
+            }
+        ]
+    }
+}
+=== recovering
+{"status":"recovering","scenario":"smf_crash","timestamp":"2026-04-20T03:47:08.780051+00:00","watch":"GET /faults/active to confirm system normalizes"}
+=== done 2026-04-20T03:47:08Z

@@ -218,6 +218,45 @@ class RootCauseScoringModule:
         "bayesian":   0.3,
     }
 
+    # Day 13: reachability-driven fault prioritization.
+    #
+    # Problem the composite score alone could not solve: during the first
+    # ~50s after a single-NF fault, Granger rarely has enough samples to
+    # emit edges and the Bayesian posterior remains close to its prior.
+    # The composite therefore degenerates into a pure-topology ranking
+    # where NRF (highest centrality, parent of every other NF in the
+    # Bayesian net) always wins rank 1, regardless of which NF actually
+    # crashed. Live demo reproduced three separate faults producing
+    # byte-identical composite scores with NRF at rank 1.
+    #
+    # Fix: an NF that has been persistently unreachable for the last N
+    # cycles is definitively the fault surface. Floor its composite at
+    # _REACHABILITY_FLOOR (+ small centrality tie-break) so it surfaces
+    # at rank 1 even when Granger/Bayesian signals are weak. When
+    # multiple NFs are unreachable (typical of an NRF crash cascade),
+    # centrality still breaks the tie and NRF correctly wins.
+    #
+    # Patent mapping: this preserves Claim 1(g)/Claim 4 composite scoring
+    # while adding a reachability-grounded boost that treats the
+    # telemetry-observed ground truth (reachability=0) as dominant
+    # evidence, consistent with Claim 1(b)'s normalized ingest data.
+    _REACHABILITY_FLOOR = 0.8
+    _UNREACHABLE_CYCLES = 3
+    _MIN_GRANGER_EDGES_FOR_SIGNAL = 2
+    _TRACKED_NFS = ("nrf", "amf", "smf", "pcf", "udm", "udr", "ausf", "nssf")
+
+    @classmethod
+    def _is_unreachable(cls, buffer, nf_id: str) -> bool:
+        """
+        True iff an NF has been unreachable across the most recent
+        _UNREACHABLE_CYCLES telemetry cycles (majority vote).
+        """
+        reach = buffer.get_series(nf_id, "nf_reachability")
+        if not reach or len(reach) < cls._UNREACHABLE_CYCLES:
+            return False
+        window = reach[-cls._UNREACHABLE_CYCLES:]
+        return sum(window) / len(window) < 0.5
+
     def __init__(self):
         self.bayesian = BayesianRootCauseLayer()
         self.report_counter = 0
@@ -318,6 +357,17 @@ class RootCauseScoringModule:
                 self.WEIGHTS["bayesian"] * b
             )
 
+            # Day 13: reachability boost. See class-level docstring for
+            # _REACHABILITY_FLOOR. The 0.2*c tie-break is small enough
+            # that an unreachable leaf NF (SMF, UDR, etc.) always
+            # outranks a reachable hub NF (NRF with composite ~0.42
+            # under empty-evidence conditions) and large enough that
+            # multiple simultaneously-unreachable NFs are ordered by
+            # centrality, preserving NRF-cascade behaviour.
+            if self._is_unreachable(buffer, nf):
+                boosted = self._REACHABILITY_FLOOR + 0.2 * c
+                composite = max(composite, boosted)
+
             # Build evidence strings
             ev_strings = []
             in_edges = [
@@ -381,6 +431,55 @@ class RootCauseScoringModule:
         )
         return candidates
 
+    def _insufficient_signal_report(
+        self, buffer, granger_result
+    ) -> FaultReport:
+        """
+        Day 13: stand-in report emitted when the pipeline has neither
+        an unreachable NF nor enough Granger edges to ground a
+        composite attribution. Consumers should treat severity="INFO"
+        as "do not remediate, keep observing".
+        """
+        self.report_counter += 1
+        placeholder = RootCauseCandidate(
+            nf_id="none",
+            nf_type="NONE",
+            rank=1,
+            composite_score=0.0,
+            centrality_score=0.0,
+            temporal_score=0.0,
+            bayesian_score=0.0,
+            confidence=0.0,
+            fault_category="Informational - Insufficient Causal Signal",
+            evidence=[
+                f"Granger edges: {len(granger_result.links)} "
+                f"(need >= {self._MIN_GRANGER_EDGES_FOR_SIGNAL})",
+                "No NF persistently unreachable",
+                "Pipeline healthy or still accumulating causal evidence",
+            ],
+            causal_path=[],
+        )
+        return FaultReport(
+            report_id=(
+                f"FR-{self.report_counter:04d}-"
+                f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+            ),
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            root_cause=placeholder,
+            candidates=[placeholder],
+            fault_category="Informational - Insufficient Causal Signal",
+            severity="INFO",
+            affected_nfs=[],
+            causal_chain=[],
+            recommended_action=(
+                "Continue monitoring. Wait for telemetry buffer to "
+                "accumulate causal signal, or inject a fault to "
+                "validate the pipeline."
+            ),
+            detection_latency_ms=0.0,
+            telemetry_window_cycles=len(buffer.timestamps),
+        )
+
     def generate_report(
         self,
         candidates: list[RootCauseCandidate],
@@ -392,6 +491,25 @@ class RootCauseScoringModule:
         Patent Claim 1(h): generating fault report.
         Patent Claim 6: maps to REST API response schema.
         """
+        # Day 13: pipeline-not-ready gate. When no NF is persistently
+        # unreachable AND Granger discovered fewer than
+        # _MIN_GRANGER_EDGES_FOR_SIGNAL edges, the composite ranking
+        # reduces to the topology prior (NRF always wins). Emit an
+        # INFO report instead of a false-positive attribution.
+        any_unreach = any(
+            self._is_unreachable(buffer, nf) for nf in self._TRACKED_NFS
+        )
+        if (
+            not any_unreach
+            and len(granger_result.links) < self._MIN_GRANGER_EDGES_FOR_SIGNAL
+        ):
+            logger.info(
+                f"RCSM insufficient signal | "
+                f"granger_edges={len(granger_result.links)} | "
+                f"unreachable=False"
+            )
+            return self._insufficient_signal_report(buffer, granger_result)
+
         self.report_counter += 1
         root = candidates[0]
 
