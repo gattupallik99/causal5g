@@ -1,0 +1,138 @@
+=== bringing full Free5GC stack up
+ Container causal5g-nrf Running 
+ Container causal5g-smf Running 
+ Container causal5g-mongodb Starting 
+ Container causal5g-upf Starting 
+ Container causal5g-mongodb Started 
+ Container causal5g-amf Starting 
+ Container causal5g-webui Starting 
+ Container causal5g-ausf Starting 
+ Container causal5g-nssf Starting 
+ Container causal5g-udr Starting 
+ Container causal5g-pcf Starting 
+ Container causal5g-udm Starting 
+ Container causal5g-upf Started 
+ Container causal5g-pcf Started 
+ Container causal5g-webui Started 
+ Container causal5g-udm Started 
+ Container causal5g-amf Started 
+ Container causal5g-ausf Started 
+ Container causal5g-nssf Started 
+ Container causal5g-udr Started 
+NAME               IMAGE                  COMMAND                  SERVICE         CREATED        STATUS          PORTS
+causal5g-amf       free5gc/amf:v4.2.0     "./amf -c ./config/a…"   free5gc-amf     29 hours ago   Up 5 seconds    0.0.0.0:9092->9092/tcp, [::]:9092->9092/tcp, 0.0.0.0:8001->8000/tcp, [::]:8001->8000/tcp
+causal5g-ausf      free5gc/ausf:v4.2.0    "./ausf -c ./config/…"   free5gc-ausf    29 hours ago   Up 5 seconds    0.0.0.0:9097->9097/tcp, [::]:9097->9097/tcp, 0.0.0.0:8006->8000/tcp, [::]:8006->8000/tcp
+causal5g-mongodb   mongo:4.4              "docker-entrypoint.s…"   db              29 hours ago   Up 5 seconds    27017/tcp
+causal5g-nrf       free5gc/nrf:v4.2.0     "./nrf -c ./config/n…"   free5gc-nrf     29 hours ago   Up 40 minutes   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp, 0.0.0.0:9091->9091/tcp, [::]:9091->9091/tcp
+causal5g-nssf      free5gc/nssf:v4.2.0    "./nssf -c ./config/…"   free5gc-nssf    29 hours ago   Up 5 seconds    0.0.0.0:9098->9098/tcp, [::]:9098->9098/tcp, 0.0.0.0:8007->8000/tcp, [::]:8007->8000/tcp
+causal5g-pcf       free5gc/pcf:v4.2.0     "./pcf -c ./config/p…"   free5gc-pcf     29 hours ago   Up 5 seconds    0.0.0.0:9094->9094/tcp, [::]:9094->9094/tcp, 0.0.0.0:8003->8000/tcp, [::]:8003->8000/tcp
+causal5g-smf       free5gc/smf:v4.2.0     "./smf -c ./config/s…"   free5gc-smf     29 hours ago   Up 4 minutes    0.0.0.0:9093->9093/tcp, [::]:9093->9093/tcp, 0.0.0.0:8002->8000/tcp, [::]:8002->8000/tcp
+causal5g-udm       free5gc/udm:v4.2.0     "./udm -c ./config/u…"   free5gc-udm     29 hours ago   Up 5 seconds    0.0.0.0:9095->9095/tcp, [::]:9095->9095/tcp, 0.0.0.0:8004->8000/tcp, [::]:8004->8000/tcp
+causal5g-udr       free5gc/udr:v4.2.0     "./udr -c ./config/u…"   free5gc-udr     29 hours ago   Up 5 seconds    0.0.0.0:9096->9096/tcp, [::]:9096->9096/tcp, 0.0.0.0:8005->8000/tcp, [::]:8005->8000/tcp
+causal5g-webui     free5gc/webui:v4.2.0   "./webui -c ./config…"   free5gc-webui   29 hours ago   Up 5 seconds    0.0.0.0:5001->5001/tcp, [::]:5001->5001/tcp, 0.0.0.0:5003->5000/tcp, [::]:5003->5000/tcp
+=== waiting 60s for NRF registration and NF handshakes
+causal5g-smf       Up 5 minutes
+causal5g-amf       Up About a minute
+causal5g-ausf      Up About a minute
+causal5g-udr       Up About a minute
+causal5g-pcf       Up About a minute
+causal5g-nssf      Up About a minute
+causal5g-webui     Up About a minute
+causal5g-udm       Up About a minute
+causal5g-nrf       Up 41 minutes
+causal5g-mongodb   Up About a minute
+=== restarting uvicorn with fresh buffer
+uvicorn pid 45485
+=== waiting 110s for buffer fill (22 cycles at 5s) + first analysis
+=== HEALTHY BASELINE (expect severity=INFO, nf_id=none if gate fires, OR low-score topology ranking)
+{
+    "status": "ok",
+    "active_injections": [],
+    "report": {
+        "report_id": "FR-0001-20260420042653",
+        "timestamp": "2026-04-20T04:26:53.485096+00:00",
+        "severity": "CRITICAL",
+        "fault_category": "Communications Alarm - NF Registry Failure",
+        "affected_nfs": [],
+        "causal_chain": [
+            "nrf",
+            "udm",
+            "ausf"
+        ],
+        "recommended_action": "Restart NRF immediately. Check MongoDB connectivity. Verify NF re-registration after recovery.",
+        "telemetry_window_cycles": 20,
+        "root_cause": {
+            "nf_id": "nrf",
+            "nf_type": "NRF",
+            "rank": 1,
+            "composite_score": 0.8056,
+            "centrality_score": 1.0,
+            "temporal_score": 0.8518,
+            "bayesian_score": 0.5,
+            "confidence": 1.0,
+=== INJECTING smf_crash
+{"status":"injected","scenario":"smf_crash","target_nf":"smf","severity":"HIGH","description":"SMF crash - PDU session establishment fails","expected_impact":["pcf","udm"],"timestamp":"2026-04-20T04:27:05.290279+00:00","next_analysis_in":"40s","watch":"GET /faults/active to see root cause shift"}
+=== POST-SMF (expect SMF rank 1, composite ~0.878, NRF not rank 1)
+        "root_cause": {
+            "nf_id": "smf",
+            "nf_type": "SMF",
+            "rank": 1,
+            "composite_score": 0.9,
+            "centrality_score": 0.5,
+            "temporal_score": 0.0,
+--
+            {
+                "nf_id": "smf",
+                "rank": 1,
+                "composite_score": 0.9,
+                "centrality_score": 0.5,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.5,
+--
+            {
+                "nf_id": "udr",
+                "rank": 2,
+                "composite_score": 0.7685,
+                "centrality_score": 0.7963,
+                "temporal_score": 1.0,
+                "bayesian_score": 0.5,
+--
+            {
+                "nf_id": "nrf",
+                "rank": 3,
+                "composite_score": 0.55,
+                "centrality_score": 1.0,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.5,
+--
+            {
+                "nf_id": "udm",
+                "rank": 4,
+                "composite_score": 0.4463,
+                "centrality_score": 0.7407,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.5,
+--
+            {
+                "nf_id": "amf",
+                "rank": 5,
+                "composite_score": 0.2907,
+                "centrality_score": 0.3519,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.5,
+--
+            {
+                "nf_id": "nssf",
+                "rank": 6,
+                "composite_score": 0.2167,
+                "centrality_score": 0.1667,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.5,
+--
+            {
+                "nf_id": "pcf",
+                "rank": 7,
+                "composite_score": 0.15,
+=== RECOVERING
+{"status":"recovering","scenario":"smf_crash","timestamp":"2026-04-20T04:28:10.772878+00:00","watch":"GET /faults/active to confirm system normalizes"}
+=== DONE 2026-04-20T04:28:10Z

@@ -1,0 +1,99 @@
+uvicorn pid 44511
+waiting 140s for buffer fill + one analysis cycle...
+=== HEALTH
+{
+    "status": "healthy",
+    "pipeline_running": true,
+    "cycle_count": 28,
+    "buffer_fill_pct": 46.7,
+    "analysis_count": 1,
+    "active_faults": [],
+    "uptime_since": "2026-04-20T04:16:08.750285+00:00"
+}
+=== QUIESCENT (expect severity=INFO, nf_id=none)
+{
+    "status": "ok",
+    "active_injections": [],
+    "report": {
+        "report_id": "FR-0001-20260420041744",
+        "timestamp": "2026-04-20T04:17:44.289959+00:00",
+        "severity": "CRITICAL",
+        "fault_category": "Processing Error - Subscriber Data Unavailable",
+        "affected_nfs": [
+            "amf",
+            "smf",
+            "pcf",
+            "udm",
+            "udr",
+            "ausf",
+            "nssf"
+        ],
+        "causal_chain": [
+            "udm"
+        ],
+        "recommended_action": "Restart UDM. Check UDR connectivity. Verify subscriber data consistency.",
+        "telemetry_window_cycles": 20,
+        "root_cause": {
+            "nf_id": "udm",
+            "nf_type": "UDM",
+            "rank": 1,
+            "composite_score": 0.8815,
+            "centrality_score": 0.4074,
+            "temporal_score": 0.0,
+            "bayesian_score": 0.5,
+=== INJECTING smf_crash
+{"status":"injected","scenario":"smf_crash","target_nf":"smf","severity":"HIGH","description":"SMF crash - PDU session establishment fails","expected_impact":["pcf","udm"],"timestamp":"2026-04-20T04:18:27.848345+00:00","next_analysis_in":"10s","watch":"GET /faults/active to see root cause shift"}
+=== POST-SMF-CRASH (expect root_cause.nf_id=smf, composite >= 0.8)
+{
+    "status": "ok",
+    "active_injections": [
+        "smf_crash"
+    ],
+    "report": {
+        "report_id": "FR-0003-20260420041924",
+        "timestamp": "2026-04-20T04:19:24.724587+00:00",
+        "severity": "CRITICAL",
+        "fault_category": "Processing Error - Subscriber Data Unavailable",
+        "affected_nfs": [
+            "amf",
+            "smf",
+            "pcf",
+            "udm",
+            "udr",
+            "ausf",
+            "nssf"
+        ],
+        "causal_chain": [
+            "udm"
+        ],
+        "recommended_action": "Restart UDM. Check UDR connectivity. Verify subscriber data consistency.",
+        "telemetry_window_cycles": 40,
+        "root_cause": {
+            "nf_id": "udm",
+            "nf_type": "UDM",
+            "rank": 1,
+            "composite_score": 0.8815,
+            "centrality_score": 0.4074,
+            "temporal_score": 0.0,
+            "bayesian_score": 0.5,
+            "confidence": 1.0,
+            "fault_category": "Processing Error - Subscriber Data Unavailable",
+            "evidence": [
+                "NF unreachable (reachability=0)"
+            ],
+            "causal_path": [
+                "udm"
+            ]
+        },
+        "all_candidates": [
+            {
+                "nf_id": "udm",
+                "rank": 1,
+                "composite_score": 0.8815,
+                "centrality_score": 0.4074,
+                "temporal_score": 0.0,
+                "bayesian_score": 0.5,
+                "confidence": 1.0
+=== RECOVERING
+{"status":"recovering","scenario":"smf_crash","timestamp":"2026-04-20T04:19:33.313822+00:00","watch":"GET /faults/active to confirm system normalizes"}
+=== DONE 2026-04-20T04:19:33Z
