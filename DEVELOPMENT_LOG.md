@@ -1356,5 +1356,180 @@ Next: Prometheus metrics exporter (priority #4) and non-provisional prep (priori
 
 ---
 
+## Day 15 — Prometheus metrics exporter (observability for claims 1-4)
+
+**Date:** April 18, 2026
+**Commit:** (this commit)
+**Focus:** add a first-class Prometheus exposition endpoint so every claim surface (bi-level DAG attribution, four-domain hierarchy, closed-loop remediation, feedback recalibration) has a scrape-able time-series counterpart. This is the operational-readiness work for priority #4 from CLAUDE.md; it does not extend any claim but it strengthens the reduction-to-practice record by giving the patent attorney concrete observability evidence for every limitation.
+
+### Scope
+
+Pre-Day-15 the `/metrics` endpoint on `api/frg.py` emitted five hand-rolled plain-text lines (`causal5g_pipeline_cycles_total` and four gauges). No counters for the attribution layer, no histograms for latency, no signal on remediation dispatch, no confidence-gate decision record. Day 15 replaces this with a real `prometheus_client`-backed registry exposed at the same URL and instruments the three hot paths (RCSM scoring, RCA report emission, RemediationExecutor dispatch, RAE confidence gate).
+
+### Design
+
+#### Module structure
+
+New package `causal5g/observability/` with a single concrete module `metrics.py`. Every instrumented call site imports the module as `from causal5g.observability import metrics as _metrics` and calls one of the thin public helpers (`record_scrape`, `observe_composite`, `record_report`, `record_remediation`, `record_gate_decision`, plus the `time_attribution` / `time_remediation` context managers). The `prometheus_client` dependency is lazy-imported inside `_MetricsRegistry.ensure()` so:
+
+- `prometheus_client` is an optional dependency, not a hard requirement.
+- Environments that never scrape (CI, patent demo, unit tests when the package is not installed) pay zero import cost.
+- When the import fails, every helper becomes a no-op and `render()` returns a zero-byte body; the `/metrics` endpoint on `api/frg.py` then falls back to the pre-Day-15 hand-rolled plain-text lines for continuity with the existing Grafana dashboards.
+
+#### Bounded label cardinality
+
+Every label set is enumerated as a module-level constant (`TRACKED_NFS`, `ACTIONS`, `STATUSES`, `SEVERITIES`, `GATE_DECISIONS`). A private `_validated(value, allowed)` helper coerces any out-of-set value to the literal `"other"` before calling `.labels(...)`. Unbounded label cardinality is the standard way to DoS a Prometheus server; enforcing this at the instrumentation layer prevents an upstream drift (e.g. a new ActionType added without updating the constant) from silently tipping the scrape into a cardinality explosion.
+
+#### Private CollectorRegistry
+
+`causal5g.observability.metrics` builds its own `CollectorRegistry` rather than using the process default. The `prometheus_client` default registry is a process-wide global that cannot be cleared, which is the origin of nearly every prometheus-in-pytest failure mode (duplicate-registration errors when a test module is imported twice, counter values bleeding across tests). The private registry plus a `reset_for_tests()` helper gives us hermetic per-test state without changing semantics for production scrapes.
+
+### Metric surface
+
+| Metric | Type | Labels | Site |
+|--------|------|--------|------|
+| `causal5g_telemetry_scrapes_total` | Counter | `nf` | `api/frg.py` scrape loop |
+| `causal5g_attribution_seconds` | Histogram | — | `RCSM.score` (Claim 1/4) |
+| `causal5g_composite_score` | Gauge | `nf` | `RCSM.score` per candidate |
+| `causal5g_rca_reports_total` | Counter | `severity` | `RCSM.generate_report` (Claim 2) |
+| `causal5g_remediation_actions_total` | Counter | `action`, `status` | `RemediationExecutor.execute` (Claim 3) |
+| `causal5g_remediation_seconds` | Histogram | `action` | `RemediationExecutor.execute` |
+| `causal5g_confidence_gate_decisions_total` | Counter | `decision` (executed/skipped) | `api/rae.py` gate (Claim 3) |
+| `causal5g_pipeline_cycles_total` | Gauge | — | pipeline loop + scrape refresh |
+| `causal5g_analyses_total` | Gauge | — | pipeline loop + scrape refresh |
+| `causal5g_events_ingested_total` | Gauge | — | pipeline loop + scrape refresh |
+| `causal5g_buffer_fill_pct` | Gauge | — | pipeline loop + scrape refresh |
+| `causal5g_active_faults` | Gauge | — | pipeline loop + scrape refresh |
+
+The last five are gauges by design: they read from `state` at scrape time rather than tracking deltas, so a bare `/metrics` call returns a coherent snapshot even when the pipeline loop is idle.
+
+### Instrumentation sites
+
+```
+api/frg.py
+  + import causal5g.observability.metrics
+  + per-cycle: record_scrape(nf) for every event,
+              set_pipeline_cycles / set_events_ingested /
+              set_buffer_fill_pct / set_active_faults
+  * /metrics endpoint rewritten to use _metrics.render() when
+    available, falls back to hand-rolled lines otherwise
+
+causal/engine/rcsm.py
+  + import causal5g.observability.metrics
+  + score(): perf_counter around the body; observe each candidate's
+             composite_score gauge; observe attribution latency
+             histogram at end
+  + generate_report(): record_report(severity) on both the
+             pipeline-not-ready "INFO" path and the normal
+             CRITICAL/HIGH/MEDIUM/LOW path
+
+causal5g/remediation/executor.py
+  + import causal5g.observability.metrics
+  + execute(): record_remediation(action, status) on every return
+              path (UNKNOWN, DRY_RUN, SUCCESS, TIMEOUT, FAILED);
+              observe_remediation_seconds(action, elapsed) on the
+              three live-call return paths
+
+api/rae.py
+  + import causal5g.observability.metrics
+  + execute_remediation(): record_gate_decision("skipped") on
+              below-threshold path; record_gate_decision("executed")
+              on the above-threshold path immediately before action
+              dispatch
+```
+
+### Code Changes
+
+```
+causal5g/observability/__init__.py   (new)
+causal5g/observability/metrics.py    (new, ~330 lines)
+    + _MetricsRegistry (lazy prometheus_client import, ImportError-tolerant)
+    + record_scrape, observe_composite, observe_attribution_seconds,
+      record_report, record_remediation, observe_remediation_seconds,
+      record_gate_decision, set_pipeline_cycles, set_analyses_total,
+      set_events_ingested, set_buffer_fill_pct, set_active_faults
+    + time_attribution, time_remediation context managers
+    + render() → (body_bytes, content_type)
+    + reset_for_tests(), is_available(), METRIC_NAMES
+
+api/frg.py                 — +14 lines: scrape-path instrumentation +
+                             /metrics endpoint rewritten
+causal/engine/rcsm.py      — +8 lines: attribution timer + composite
+                             gauge + severity counter
+causal5g/remediation/executor.py — +9 lines: per-return-path counters
+                             and per-action duration histogram
+api/rae.py                 — +3 lines: gate decision counter
+```
+
+### Tests
+
+```
+tests/observability/test_metrics.py  (new, 19 tests)
+  TestRegistryLifecycle       is_available, reset semantics,
+                              content-type contract
+  TestScrapeCounter           per-NF labels + "other" collapse + count=N
+  TestAttributionLatency      context manager + direct-observe paths;
+                              bucket assignment check
+  TestCompositeScoreGauge     last-write-wins semantics; unknown NF
+                              collapses
+  TestReportCounter           severity label bound to the five
+                              enumerated bands; out-of-set → "other"
+  TestRemediationCounters     action+status labels, observe/time pair,
+                              unknown-action collapse
+  TestGateDecisionCounter     executed vs skipped; unknown decision
+                              collapses
+  TestPipelineGauges          all five setters round-trip through the
+                              exposition
+  TestExposition              every METRIC_NAME appears in render()
+                              after being touched
+  TestFallbackPath            with prometheus_client blocked in
+                              sys.modules: every helper is a no-op,
+                              render() returns empty bytes
+```
+
+Existing 314 tests still pass unchanged — the instrumentation hooks are all side-effect free when the registry is fresh, and no existing test asserts anything about metric values.
+
+### Results
+
+```
+Tests:    334 passed (was 314; +20 new)
+          - 21 existing executor tests unchanged
+          - 16 existing RCSM attribution tests unchanged
+          - 18 existing K8s path tests unchanged
+          - 20 new observability tests (read via
+            metrics.get_sample(name, **labels) — version-
+            independent across prometheus_client 0.19-0.25)
+Coverage: causal5g/observability/metrics.py — every helper covered,
+          both prometheus-present and prometheus-absent paths
+Runtime:  3.59 s full suite (was 4.56 s; lazy prometheus_client import
+          means test collection does not pay the import cost)
+```
+
+### Claim-to-metric map
+
+| Claim | Metric(s) |
+|-------|-----------|
+| Claim 1 | `causal5g_attribution_seconds` (time-to-score), `causal5g_composite_score{nf}` (per-NF attribution output) |
+| Claim 2 | `causal5g_rca_reports_total{severity}` (report emission, per severity band) |
+| Claim 3 | `causal5g_confidence_gate_decisions_total{decision}` (gate decision), `causal5g_remediation_actions_total{action,status}` (dispatch outcome), `causal5g_remediation_seconds{action}` (action latency) |
+| Claim 4 | `causal5g_attribution_seconds` + `causal5g_composite_score{nf}` (the same gauges feed the recalibrator's input side) |
+
+### Claim Status After Day 15
+
+| Claim | Status |
+|-------|--------|
+| Claim 1 | Reduced to practice with observability surface |
+| Claim 2 | Reduced to practice with observability surface |
+| Claim 3 | Reduced to practice at production level with observability surface |
+| Claim 4 | Reduced to practice with observability surface |
+
+### Patent Evidence
+
+Every claim now has a Prometheus metric that can be scraped from a running cluster, plotted in Grafana, and handed to a patent attorney as a time-series trace of a real fault injection → attribution → remediation cycle. For the non-provisional this is important: the provisional's "observability" language was aspirational; Day 15 grounds it in a concrete exposition format (`text/plain; version=0.0.4`) against a concrete, enumerated metric surface.
+
+Next: Day 16 candidate — live Free5GC fault-sweep evidence capture (run all five `faults/injector.py` scenarios end-to-end and commit the RCAReport JSONs plus `/metrics` snapshots as `evidence/day16/*`).
+
+---
+
 *This log is maintained as part of the patent evidence record for the Causal5G provisional patent application.*  
 *© 2026 Krishna Kumar Gattupalli. All rights reserved. CONFIDENTIAL.*

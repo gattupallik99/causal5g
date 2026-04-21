@@ -33,6 +33,7 @@ from causal.engine.granger import TelemetryBuffer, GrangerCausalityEngine
 from causal.graph.dcgm import DynamicCausalGraphManager
 from causal.engine.rcsm import RootCauseScoringModule, FaultReport
 from faults.injector import FaultInjector
+from causal5g.observability import metrics as _metrics  # Day 15
 
 
 def _to_py(x):
@@ -102,6 +103,17 @@ def pipeline_loop():
             state.buffer.add_events(events)
             state.cycle_count += 1
             state.total_events_ingested += len(events)
+
+            # Day 15: per-NF scrape counter + pipeline gauges.
+            for ev in events:
+                nf_id = getattr(ev, "nf_id", None) or (
+                    ev.get("nf_id") if isinstance(ev, dict) else None)
+                if nf_id:
+                    _metrics.record_scrape(str(nf_id).lower())
+            _metrics.set_pipeline_cycles(state.cycle_count)
+            _metrics.set_events_ingested(state.total_events_ingested)
+            _metrics.set_buffer_fill_pct(state.buffer.fill_pct)
+            _metrics.set_active_faults(len(state.injector.active_faults))
 
             if state.buffer.ready and state.cycle_count % 10 == 0:
                 result = state.granger.analyze(state.buffer)
@@ -493,9 +505,29 @@ async def websocket_live(websocket: WebSocket):
 
 
 # ── Prometheus Metrics ────────────────────────────────────────
+# Day 15: standards-compliant Prometheus exposition via
+# ``causal5g.observability.metrics``. The helper keeps a private
+# CollectorRegistry so scrapes return a coherent snapshot; the
+# fallback path (prometheus_client not installed) preserves the
+# original hand-rolled plain-text lines used by the patent demo.
 
-@app.get("/metrics", response_class=PlainTextResponse, tags=["Status"])
+from fastapi import Response  # local import: already used below
+
+@app.get("/metrics", tags=["Status"])
 async def prometheus_metrics():
+    # Refresh gauges at scrape time so a bare /metrics call (no active
+    # pipeline loop) still reports the latest state.
+    _metrics.set_pipeline_cycles(state.cycle_count)
+    _metrics.set_analyses_total(state.total_analyses_run)
+    _metrics.set_events_ingested(state.total_events_ingested)
+    _metrics.set_buffer_fill_pct(state.buffer.fill_pct)
+    _metrics.set_active_faults(len(state.injector.active_faults))
+
+    if _metrics.is_available():
+        body, content_type = _metrics.render()
+        return Response(content=body, media_type=content_type)
+
+    # Fallback: hand-rolled plain text (pre-Day-15 behaviour).
     lines = [
         f"causal5g_pipeline_cycles_total {state.cycle_count}",
         f"causal5g_analyses_total {state.total_analyses_run}",
@@ -508,7 +540,7 @@ async def prometheus_metrics():
         lines.append(f'causal5g_root_cause_score{{nf="{rc.nf_id}"}} {rc.composite_score}')
         for c in state.candidates:
             lines.append(f'causal5g_candidate_score{{nf="{c.nf_id}"}} {c.composite_score}')
-    return "\n".join(lines) + "\n"
+    return PlainTextResponse("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":

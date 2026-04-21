@@ -41,6 +41,7 @@ from enum import Enum
 from typing import Any, Awaitable, Callable
 
 from causal5g.remediation.policy_store import PolicyEntry
+from causal5g.observability import metrics as _metrics  # Day 15
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +201,7 @@ class RemediationExecutor:
 
         handler = self._handlers.get(action)
         if handler is None:
+            _metrics.record_remediation(action, ExecutionStatus.UNKNOWN.value)
             return ExecutionResult(
                 status=ExecutionStatus.UNKNOWN, action=action, target=target,
                 started_at=started, finished_at=time.time(),
@@ -207,6 +209,7 @@ class RemediationExecutor:
             )
 
         if self.dry_run:
+            _metrics.record_remediation(action, ExecutionStatus.DRY_RUN.value)
             return ExecutionResult(
                 status=ExecutionStatus.DRY_RUN, action=action, target=target,
                 started_at=started, finished_at=time.time(),
@@ -214,9 +217,13 @@ class RemediationExecutor:
                 api_response={"simulated": True, "params": params},
             )
 
+        _rem_start = time.perf_counter()
         try:
             api_response = await asyncio.wait_for(
                 handler(target, params), timeout=self.timeout_s)
+            _metrics.observe_remediation_seconds(
+                action, time.perf_counter() - _rem_start)
+            _metrics.record_remediation(action, ExecutionStatus.SUCCESS.value)
             return ExecutionResult(
                 status=ExecutionStatus.SUCCESS, action=action, target=target,
                 started_at=started, finished_at=time.time(),
@@ -224,12 +231,18 @@ class RemediationExecutor:
                 api_response=api_response,
             )
         except asyncio.TimeoutError:
+            _metrics.observe_remediation_seconds(
+                action, time.perf_counter() - _rem_start)
+            _metrics.record_remediation(action, ExecutionStatus.TIMEOUT.value)
             return ExecutionResult(
                 status=ExecutionStatus.TIMEOUT, action=action, target=target,
                 started_at=started, finished_at=time.time(),
                 message=f"{action} timed out after {self.timeout_s}s",
             )
         except Exception as exc:  # noqa: BLE001 - we intentionally catch all
+            _metrics.observe_remediation_seconds(
+                action, time.perf_counter() - _rem_start)
+            _metrics.record_remediation(action, ExecutionStatus.FAILED.value)
             logger.exception("action %s failed: %s", action, exc)
             return ExecutionResult(
                 status=ExecutionStatus.FAILED, action=action, target=target,

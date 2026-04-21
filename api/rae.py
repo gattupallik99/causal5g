@@ -17,6 +17,8 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from causal5g.observability import metrics as _metrics  # Day 15
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/remediate", tags=["remediation"])
@@ -266,8 +268,11 @@ async def trigger_remediation(
         )
         _rae_state.total_skipped += 1
         _rae_state.history.append(record)
+        _metrics.record_gate_decision("skipped")   # Day 15
         logger.info("[RAE] Skipped — score %.3f below threshold %.3f", rcsm_score, CONFIDENCE_THRESHOLD)
         return record
+
+    _metrics.record_gate_decision("executed")   # Day 15
 
     record = RemediationRecord(
         record_id=record_id,

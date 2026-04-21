@@ -68,6 +68,8 @@ Provisional is filed, so public references are now acceptable with the following
 │   │   ├── executor.py     # RemediationExecutor (Claim 3)
 │   │   └── verifier.py     # RemediationVerifier (Claim 3)
 │   ├── slice_topology.py   # SliceTopologyManager (Claim 1)
+│   ├── observability/
+│   │   └── metrics.py      # Prometheus exposition (Day 15)
 │   └── telemetry/
 │       ├── sbi_collector.py   # SBI HTTP/2 capture
 │       ├── pfcp_collector.py  # PFCP N4 session stats
@@ -79,7 +81,7 @@ Provisional is filed, so public references are now acceptable with the following
 │   └── recalibrator.py     # GrangerPCFusionRecalibrator (Claim 4)
 ├── faults/
 │   └── injector.py         # 5 fault scenarios for demo
-├── tests/                  # 314 passing tests (pytest --no-cov -q)
+├── tests/                  # 334 passing tests (pytest --no-cov -q)
 ├── DEVELOPMENT_LOG.md      # Day 4-11 narrative, patent-claim mapping
 └── pyproject.toml
 ```
@@ -123,7 +125,7 @@ Coverage: <delta>
 ## Workflow
 
 - **Python:** 3.11.9 (Mac Apple Silicon)
-- **Run tests:** `python3 -m pytest --no-cov -q` (expect 314 passing after Day 14)
+- **Run tests:** `python3 -m pytest --no-cov -q` (expect 334 passing after Day 15)
 - **Run coverage:** `python3 -m pytest --cov=causal5g --cov-report=term-missing`
 - **Run API:** `uvicorn api.frg:app --port 8080 --reload`
 - **Swagger:** http://localhost:8080/docs
@@ -139,7 +141,7 @@ Provisional is filed. Focus shifts to hardening the reduction-to-practice and pr
    - Already closed: `cross_domain.py`, `hierarchical_dag.py`, `discovery.py` (Day 12a-b); `pcmci.py` (Day 12d, 100%)
 2. ~~**Wire the four unmounted routers into `api/frg.py`**~~ — done since Day 12c; all four routers (`api/rae.py`, `api/slice_router.py`, `api/pc_causal.py`, `api/control.py`) mounted on `app` and verified live (23 routes across `/slice`, `/causal/pc`, `/remediate`, `/control`).
 3. ~~**Production K8s client integration**~~ — done Day 14-b. `causal5g/remediation/executor.py` accepts an optional `k8s_client_factory: Callable[[], tuple[CoreV1Api, AppsV1Api]]`. When None (default), handlers run simulated (byte-identical to pre-Day-14 for 21 legacy tests). When supplied, handlers dispatch real K8s API calls via `asyncio.to_thread` (`delete_namespaced_pod`, `patch_namespaced_deployment_scale`, `patch_node` + `create_namespaced_pod_eviction`, `patch_namespaced_deployment` annotation, `patch_namespaced_service` selector). 18 new K8s-path tests in `tests/remediation/test_executor_k8s.py`. `default_k8s_client_factory(in_cluster, kubeconfig)` lazy-imports `kubernetes` so the library is not a hard dep.
-4. **Prometheus metrics exporter** — observability for the running pipeline.
+4. ~~**Prometheus metrics exporter**~~ — done Day 15. New package `causal5g/observability/` exposes 12 metrics via `prometheus_client` through the existing `/metrics` endpoint: per-NF scrape counter, attribution-latency histogram, composite-score gauge, RCA-report counter by severity, remediation-action counter by (action, status), remediation-duration histogram, confidence-gate decision counter, and five pipeline gauges. `prometheus_client` is a lazy import so it remains an optional dep; when absent, helpers are no-ops and `/metrics` falls back to the pre-Day-15 hand-rolled plain-text lines. Bounded label cardinality enforced via `_validated()`. 19 new tests in `tests/observability/test_metrics.py`.
 5. **Non-provisional prep** — claim language review, figure refinement, continuation-in-part scoping on anything built after the provisional filing date.
 
 ## Communication Style

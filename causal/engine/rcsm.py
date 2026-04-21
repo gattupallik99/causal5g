@@ -11,11 +11,15 @@ Composite score formula (Patent Claim 4):
             + 0.3 * bayesian_posterior(NF | evidence)
 """
 
+import time
+
 import numpy as np
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Optional
 from loguru import logger
+
+from causal5g.observability import metrics as _metrics  # Day 15
 
 try:
     from pgmpy.models import DiscreteBayesianNetwork as BayesianNetwork
@@ -320,6 +324,7 @@ class RootCauseScoringModule:
         Patent Claim 4: composite scoring.
         """
         start_ms = datetime.now(timezone.utc).timestamp() * 1000
+        _attr_start = time.perf_counter()
 
         # Component 1: Graph centrality (from DCGM)
         import networkx as nx
@@ -429,6 +434,13 @@ class RootCauseScoringModule:
             f"top={candidates[0].nf_id}({candidates[0].composite_score:.4f}) | "
             f"latency={end_ms-start_ms:.1f}ms"
         )
+
+        # Day 15: observe composite scores for every candidate + record
+        # attribution latency.
+        for c in candidates:
+            _metrics.observe_composite(c.nf_id, c.composite_score)
+        _metrics.observe_attribution_seconds(time.perf_counter() - _attr_start)
+
         return candidates
 
     def _insufficient_signal_report(
@@ -508,6 +520,7 @@ class RootCauseScoringModule:
                 f"granger_edges={len(granger_result.links)} | "
                 f"unreachable=False"
             )
+            _metrics.record_report("INFO")   # Day 15
             return self._insufficient_signal_report(buffer, granger_result)
 
         self.report_counter += 1
@@ -523,6 +536,8 @@ class RootCauseScoringModule:
         severity = "CRITICAL" if root.composite_score > 0.6 else \
                    "HIGH" if root.composite_score > 0.4 else \
                    "MEDIUM" if root.composite_score > 0.2 else "LOW"
+
+        _metrics.record_report(severity)   # Day 15
 
         return FaultReport(
             report_id=f"FR-{self.report_counter:04d}-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
