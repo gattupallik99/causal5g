@@ -1,0 +1,1 @@
+{"record_id":"d6c5d45a","fault_scenario":"nrf_crash","root_cause_nf":"nrf","rcsm_score":0.85,"action":"restart_pod","target":"nrf","status":"success","outcome_signal":1.0,"latency_ms":101.25,"slice_id":null,"skipped_reason":null}

@@ -1,0 +1,1 @@
+{"record_id":"cac777c1","fault_scenario":"udm_crash","root_cause_nf":"nrf","rcsm_score":1.0,"action":"restart_pod","target":"udm","status":"success","outcome_signal":1.0,"latency_ms":101.15,"slice_id":null,"skipped_reason":null}

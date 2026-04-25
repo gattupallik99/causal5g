@@ -1,0 +1,6 @@
+scenario	expected_nf	detected_nf	match	composite	confidence	severity	action	status	outcome	detect_s
+nrf_crash	nrf	amf	MISS	1.0	1.0	CRITICAL	restart_pod	success	1.0	23
+amf_crash	amf	amf	HIT	1.0	1.0	CRITICAL	restart_pod	success	1.0	31
+smf_crash	smf	amf	MISS	1.0	1.0	CRITICAL	restart_pod	success	1.0	32
+pcf_timeout	pcf	udm	MISS	1.0	1.0	CRITICAL	rollback_config	success	1.0	53
+udm_crash	udm	udm	HIT	1.0	1.0	CRITICAL	restart_pod	success	1.0	42

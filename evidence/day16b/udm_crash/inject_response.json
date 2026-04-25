@@ -1,0 +1,1 @@
+{"status":"injected","scenario":"udm_crash","target_nf":"udm","severity":"HIGH","description":"UDM crash - subscriber data unavailable","expected_impact":["ausf","amf","smf"],"timestamp":"2026-04-21T04:15:20.971256+00:00","next_analysis_in":"35s","watch":"GET /faults/active to see root cause shift"}

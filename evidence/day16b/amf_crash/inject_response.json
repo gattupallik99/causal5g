@@ -1,0 +1,1 @@
+{"status":"injected","scenario":"amf_crash","target_nf":"amf","severity":"HIGH","description":"AMF crash - UE registration fails","expected_impact":["smf","ausf"],"timestamp":"2026-04-21T04:10:45.808047+00:00","next_analysis_in":"40s","watch":"GET /faults/active to see root cause shift"}

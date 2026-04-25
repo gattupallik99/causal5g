@@ -1,0 +1,1 @@
+{"status":"injected","scenario":"smf_crash","target_nf":"smf","severity":"HIGH","description":"SMF crash - PDU session establishment fails","expected_impact":["pcf","udm"],"timestamp":"2026-04-21T04:24:46.305781+00:00","next_analysis_in":"35s","watch":"GET /faults/active to see root cause shift"}

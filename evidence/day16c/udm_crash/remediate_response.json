@@ -1,0 +1,1 @@
+{"record_id":"8f619b6d","fault_scenario":"udm_crash","root_cause_nf":"udm","rcsm_score":1.0,"action":"restart_pod","target":"udm","status":"success","outcome_signal":1.0,"latency_ms":101.2,"slice_id":null,"skipped_reason":null}
