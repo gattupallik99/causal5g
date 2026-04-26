@@ -228,6 +228,15 @@ def _push_feedback(record: RemediationRecord) -> None:
     logger.debug("[RAE] Feedback pushed: %s", entry)
 
 
+def get_feedback_buffer() -> list[dict]:
+    """
+    Return a snapshot of the current RAE feedback buffer.
+    Called by frg.py pipeline_loop() to feed outcome signals into the
+    GrangerPCFusionRecalibrator (Patent Claim 4).
+    """
+    return list(_rae_state.feedback_buffer)
+
+
 async def trigger_remediation(
     fault_scenario: str,
     root_cause_nf:  str,

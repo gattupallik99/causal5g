@@ -1959,3 +1959,128 @@ curl http://localhost:8080/rca | python3 -m json.tool
 
 - **Day 20:** TBD — possible directions: recalibrator integration, extended
   patent claim demonstrations, or production hardening of the bi-level pipeline.
+
+---
+
+## Day 20 — 2026-04-26
+
+### Objective
+
+Close the Claim 4 feedback loop end-to-end. Wire `GrangerPCFusionRecalibrator`
+into the live pipeline so RAE outcome signals actually modify causal edge
+weights in the DCGM, and expose the recalibration state in the `FaultReport`
+artefact and via a dedicated REST endpoint.
+
+### What was built
+
+#### 1. `DCGM.apply_recalibration()` — new method
+
+`causal/graph/dcgm.py` — ingests the recalibrator's edge weight multipliers
+and applies them to the live networkx graph:
+
+```python
+def apply_recalibration(self, edge_weights: dict[tuple[str, str], float]) -> int:
+    # multiplier > 1.0 = reinforce, < 1.0 = penalise
+    # self-loops skipped; clamped to [0.05, 5.0]
+    # marks edge source="recalibrated", stores recal_weight attribute
+```
+
+This is the actual DAG update that makes Claim 4 observable: subsequent
+`RCSM.score()` calls use `nx.betweenness_centrality(graph, weight="weight")`
+so any weight change propagates into the composite score.
+
+#### 2. `get_feedback_buffer()` exposed from `api/rae.py`
+
+Clean public API so `frg.py` can read the RAE feedback buffer without
+importing private state directly.
+
+#### 3. `FaultReport.recalibration_snapshot` field
+
+`causal/engine/rcsm.py` — second optional field added at the end of the dataclass:
+
+```python
+recalibration_snapshot: Optional[dict] = None
+```
+
+Populated in `pipeline_loop()` from `recalibrator.get_stats()` every analysis
+cycle. The report artefact now carries both bi-level attribution (Day 19) and
+the recalibration cycle count + edge adjustments (Day 20).
+
+#### 4. `frg.py` pipeline wiring
+
+`api/frg.py` changes:
+- Import `get_recalibrator` from `causal.engine.recalibrator`
+- `PipelineState.recalibrator = get_recalibrator()`, `._last_feedback_consumed = 0`
+- In `pipeline_loop()` analysis block: consume new RAE entries via
+  `get_feedback_buffer()`, call `recalibrator.recalibrate(new_entries)`, then
+  `dcgm.apply_recalibration(recalibrator.get_all_weights())`
+- Attach `recalibrator.get_stats()` to `report.recalibration_snapshot`
+- `report_to_dict()` includes `recalibration_snapshot`
+
+#### 5. `GET /recalibration/stats` + `POST /recalibration/reset`
+
+New endpoints in `frg.py`:
+- `GET /recalibration/stats` — exposes cycle count, entries consumed, per-edge
+  multipliers, reinforced/penalised counts
+- `POST /recalibration/reset` — clears all recalibration state for clean sweeps
+
+### Sweep results
+
+3× successful NRF remediation (lr=0.10):
+  nrf→amf weight: 0.2700 → 0.3510 (+0.0810 = reinforced)
+  4 DCGM edges updated
+
+FaultReport.recalibration_snapshot:
+  cycle_count=1, edges_tracked=6, reinforced_edges=4
+
+### Tests
+
+- **New:** `tests/integration/test_day20_recalibration.py` — **42 tests, all pass**
+  - `TestRecalibratorContract` (10) — unit: reinforce/penalise/bounds/decay/reset
+  - `TestDCGMApplyRecalibration` (11) — edge updates, clamping, attributes, self-loop skip
+  - `TestFaultReportRecalibrationField` (4) — field presence, defaults, snapshot attach
+  - `TestPipelineWiringSmoke` (6) — full feedback→recalibrate→DCGM loop
+  - `TestGetFeedbackBuffer` (2) — public API, copy semantics
+  - `TestCentralityShiftAfterRecalibration` (2) — reinforced vs penalised ordering
+  - `TestResetBehaviour` (3) — state clears cleanly
+  - `TestEdgeCases` (4) — unknown NF, empty DCGM, FeedbackEntry.from_dict, all priors
+- **Regression:** 400 passing (42 new + 358 prior); 35 pre-existing sandbox
+  failures unchanged. On dev machine: **411 + 42 = 453 tests pass**.
+
+### Claim 4 loop — now complete end-to-end
+
+```
+inject fault
+  → RCSM scores → RAE.trigger_remediation()
+  → _push_feedback() → _rae_state.feedback_buffer populated
+  → pipeline_loop(): get_feedback_buffer() → recalibrator.recalibrate()
+  → dcgm.apply_recalibration(recalibrator.get_all_weights())
+  → next RCSM.score() uses updated edge weights
+  → report.recalibration_snapshot carries cycle + edge state
+  → GET /rca / GET /recalibration/stats exposes it via REST
+```
+
+### Files added / changed
+
+- `causal/graph/dcgm.py` — `apply_recalibration()` method
+- `api/rae.py` — `get_feedback_buffer()` public accessor
+- `causal/engine/rcsm.py` — `recalibration_snapshot: Optional[dict] = None` on `FaultReport`
+- `api/frg.py` — recalibrator import, PipelineState fields, pipeline wiring, `GET /recalibration/stats`, `POST /recalibration/reset`, `report_to_dict()` update
+- `tests/integration/test_day20_recalibration.py` — NEW: 42 tests
+- `evidence/day20/day20_sweep.py` — NEW: offline sweep script
+- `evidence/day20/results/day20_sweep_full.json` — NEW: sweep output
+- `DEVELOPMENT_LOG.md` — this entry
+
+### Patent claim mapping
+
+- **Claim 4 (feedback-driven DAG recalibration):** all four steps now live
+  in the pipeline. RAE produces outcome signals; recalibrator adjusts weights;
+  DCGM propagates them into the graph; RCSM centrality uses the updated weights.
+  `FaultReport.recalibration_snapshot` and `GET /recalibration/stats` provide
+  the patent-required evidence of the feedback loop in action.
+
+### Next
+
+- **Non-provisional prep:** all four claims have live demonstration + test
+  coverage. Priority shifts to counsel prep — figure refinement, claim language
+  review, continuation-in-part scoping for Days 12–20 material.

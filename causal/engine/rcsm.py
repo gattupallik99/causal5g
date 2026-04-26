@@ -70,6 +70,8 @@ class FaultReport:
     telemetry_window_cycles: int
     # Day 19: Level-2 slice-layer attribution (optional — absent on INFO reports)
     slice_attribution: Optional[dict] = None
+    # Day 20: Claim 4 recalibration state at report time (cycle count, adjusted edges)
+    recalibration_snapshot: Optional[dict] = None
 
 
 # 3GPP TS 32.111 fault categories

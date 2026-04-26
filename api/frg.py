@@ -35,6 +35,7 @@ from causal.engine.rcsm import RootCauseScoringModule, FaultReport
 from faults.injector import FaultInjector
 from causal5g.observability import metrics as _metrics  # Day 15
 from causal5g.causal.slice_ensemble import SliceEnsembleAttributor  # Day 19
+from causal.engine.recalibrator import get_recalibrator             # Day 20
 
 
 def _to_py(x):
@@ -61,6 +62,8 @@ class PipelineState:
         self.rcsm = RootCauseScoringModule()
         self.injector = FaultInjector()
         self.sea = SliceEnsembleAttributor()       # Day 19: Level-2 slice attributor
+        self.recalibrator = get_recalibrator()    # Day 20: Claim 4 feedback recalibrator
+        self._last_feedback_consumed: int = 0    # index into RAE feedback buffer
 
         self.latest_report: Optional[FaultReport] = None
         self.report_history: list[FaultReport] = []
@@ -144,6 +147,31 @@ def pipeline_loop():
                         )
                     except Exception as _sea_exc:
                         logger.warning(f"SliceEnsembleAttributor failed: {_sea_exc}")
+
+                # Day 20: Claim 4 recalibration loop.
+                # Consume any new RAE feedback entries since the last cycle,
+                # run the recalibrator, and apply adjusted weights back into
+                # the DCGM so the next RCSM centrality pass uses them.
+                try:
+                    from api.rae import get_feedback_buffer as _get_fb
+                    feedback_buf = _get_fb()
+                    new_entries = feedback_buf[state._last_feedback_consumed:]
+                    if new_entries:
+                        recal_summary = state.recalibrator.recalibrate(new_entries)
+                        state._last_feedback_consumed = len(feedback_buf)
+                        if not recal_summary.get("skipped"):
+                            n_edges = state.dcgm.apply_recalibration(
+                                state.recalibrator.get_all_weights()
+                            )
+                            logger.info(
+                                f"Recalibration | cycle={recal_summary['cycle']} | "
+                                f"entries={recal_summary['entries_consumed']} | "
+                                f"dcgm_edges_updated={n_edges}"
+                            )
+                    # Attach recalibration snapshot to the report artefact
+                    report.recalibration_snapshot = state.recalibrator.get_stats()
+                except Exception as _recal_exc:
+                    logger.warning(f"Recalibration tick failed: {_recal_exc}")
 
                 state.candidates = candidates
                 state.latest_report = report
@@ -269,7 +297,41 @@ def report_to_dict(report: FaultReport) -> dict:
         ],
         # Day 19: Level-2 slice-layer attribution (None on INFO reports)
         "slice_attribution": report.slice_attribution,
+        # Day 20: Claim 4 recalibration state at report time
+        "recalibration_snapshot": report.recalibration_snapshot,
     }
+
+
+# ── Recalibration (Day 20) ───────────────────────────────────
+
+@app.get("/recalibration/stats", tags=["Recalibration"])
+async def get_recalibration_stats():
+    """
+    Current state of the Claim 4 feedback recalibration engine.
+
+    Patent Claim 4: feedback-driven DAG recalibration from remediation outcomes.
+    Reports how many feedback cycles have run, how many DCGM edges were adjusted,
+    and the current per-edge weight multipliers.
+
+    The recalibrator ingests outcome signals from the RAE feedback buffer
+    (GET /remediate/feedback) each analysis cycle and nudges causal edge
+    weights toward or away from 1.0 (neutral) based on whether remediation
+    of the attributed root cause succeeded or failed.
+    """
+    stats = state.recalibrator.get_stats()
+    stats["feedback_buffer_depth"] = state._last_feedback_consumed
+    return stats
+
+
+@app.post("/recalibration/reset", tags=["Recalibration"])
+async def reset_recalibration():
+    """
+    Reset all recalibration state (edge weights back to neutral 1.0).
+    Useful for starting a clean sweep without restarting the API.
+    """
+    state.recalibrator.reset()
+    state._last_feedback_consumed = 0
+    return {"status": "reset", "message": "Recalibration state cleared"}
 
 
 # ── RCA endpoint (Day 19) ────────────────────────────────────

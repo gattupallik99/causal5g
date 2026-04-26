@@ -132,6 +132,53 @@ class DynamicCausalGraphManager:
         )
         return updated
 
+    def apply_recalibration(
+        self,
+        edge_weights: dict[tuple[str, str], float],
+    ) -> int:
+        """
+        Apply feedback-recalibrated edge weight multipliers to the live graph.
+
+        Patent Claim 4: feedback-driven DAG recalibration. After the
+        GrangerPCFusionRecalibrator processes RAE outcome signals, it produces
+        an updated {(cause, effect): multiplier} dict. This method multiplies
+        each existing DCGM edge weight by the corresponding multiplier, then
+        clamps to a safe range, so subsequent centrality computations in RCSM
+        reflect the accumulated remediation outcome evidence.
+
+        Self-loops (nf, nf) from the recalibrator are skipped — DCGM carries
+        no self-loops.
+
+        Args:
+            edge_weights: {(cause_nf, effect_nf): multiplier} from recalibrator.
+                          1.0 = neutral, >1.0 = reinforced, <1.0 = penalised.
+
+        Returns:
+            Number of DCGM edges that were updated.
+        """
+        _WEIGHT_MIN = 0.05
+        _WEIGHT_MAX = 5.0
+        updated = 0
+        for (cause, effect), multiplier in edge_weights.items():
+            if cause == effect:          # skip self-loops
+                continue
+            if not self.graph.has_edge(cause, effect):
+                continue
+            old = self.graph[cause][effect]["weight"]
+            new = max(_WEIGHT_MIN, min(_WEIGHT_MAX, old * multiplier))
+            self.graph[cause][effect].update({
+                "weight":       round(new, 4),
+                "recal_weight": round(multiplier, 4),
+                "source":       "recalibrated",
+                "last_recal":   datetime.now(timezone.utc).isoformat(),
+            })
+            updated += 1
+        if updated:
+            logger.info(
+                f"DCGM recalibration applied: {updated} edges updated"
+            )
+        return updated
+
     def compute_anomaly_scores(
         self, telemetry_buffer
     ) -> dict[str, float]:

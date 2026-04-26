@@ -1,0 +1,47 @@
+{
+  "success_3x_nrf": {
+    "scenario": "3\u00d7 successful NRF remediation",
+    "cycles": 1,
+    "entries": 3,
+    "edges_adjusted_recalibrator": 6,
+    "dcgm_edges_updated": 4,
+    "nrf_amf_weight_before": 0.27,
+    "nrf_amf_weight_after": 0.351,
+    "delta": 0.081,
+    "direction": "reinforced"
+  },
+  "failure_3x_pcf": {
+    "scenario": "3\u00d7 failed PCF remediation",
+    "pcf_smf_weight_before": null,
+    "pcf_smf_weight_after": null,
+    "all_recal_weights": {
+      "pcf\u2192smf": 0.7,
+      "pcf\u2192pcf": 0.85
+    },
+    "stats": {
+      "cycle_count": 1,
+      "total_entries_consumed": 3,
+      "last_recalibrated_at": 1777214099.9108293,
+      "edges_tracked": 2,
+      "reinforced_edges": 0,
+      "penalised_edges": 2,
+      "config": {
+        "learning_rate": 0.1,
+        "temporal_decay": 0.9,
+        "weight_floor": 0.1,
+        "weight_ceiling": 2.0,
+        "min_feedback_count": 1
+      },
+      "edge_weights": {
+        "pcf\u2192pcf": 0.85,
+        "pcf\u2192smf": 0.7
+      }
+    }
+  },
+  "report_snapshot": {
+    "report_id": "FR-DAY20",
+    "recalibration_cycle": 1,
+    "edges_tracked": 6,
+    "reinforced": 6
+  }
+}
