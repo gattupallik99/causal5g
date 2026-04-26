@@ -42,3 +42,5 @@ uvicorn.pid
 
 # Local Claude Code / agent settings (not part of the reduction-to-practice)
 .claude/
+.logs/
+day*_sweep.sh
