@@ -270,6 +270,11 @@ async def patent_demo_v2():
     return FileResponse("docs/causal5g_patent_demo_v2.html")
 
 
+@app.get("/patent-demo-v3", include_in_schema=False)
+async def patent_demo_v3():
+    return FileResponse("docs/causal5g_patent_demo_v3.html")
+
+
 def report_to_dict(report: FaultReport) -> dict:
     return {
         "report_id": report.report_id,

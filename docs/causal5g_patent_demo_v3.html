@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Causal5G — Interactive Patent Demo v3</title>
+<style>
+:root{--bg:#07090f;--surf:#0d1117;--surf2:#131920;--bdr:#1e2d3d;--bdr2:#253545;--acc:#00c8ff;--acc-dim:rgba(0,200,255,0.12);--red:#ff4466;--red-dim:rgba(255,68,102,0.12);--grn:#00e676;--grn-dim:rgba(0,230,118,0.1);--amb:#ffb300;--amb-dim:rgba(255,179,0,0.12);--pur:#b388ff;--pur-dim:rgba(179,136,255,0.12);--txt:#cdd9e5;--txt-m:#5c7080;--txt-d:#3a4a5a;--mono:'JetBrains Mono',monospace;--r:6px}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:system-ui,sans-serif;font-size:13px;line-height:1.6;overflow-x:hidden}
+
+/* ── Nav ── */
+nav{background:rgba(7,9,15,0.96);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:48px;position:sticky;top:0;z-index:50}
+.nav-logo{font-family:var(--mono);font-size:12px;color:var(--acc);letter-spacing:2px}.nav-logo span{color:var(--red)}
+.nav-v{font-size:9px;color:var(--txt-m);letter-spacing:1px;margin-left:8px}
+.nav-links{display:flex;gap:20px}.nav-links a{font-size:11px;color:var(--txt-m);text-decoration:none;cursor:pointer;transition:color .2s}.nav-links a:hover{color:var(--txt)}
+.badge{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:3px;border:1px solid var(--amb);color:var(--amb);background:var(--amb-dim)}
+
+/* ── Layout ── */
+section{padding:48px 32px;max-width:1000px;margin:0 auto}
+.sec-title{background:var(--surf2);border-top:2px solid var(--bdr);border-bottom:1px solid var(--bdr);padding:10px 32px;font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--txt-m)}
+.eyebrow{font-family:var(--mono);font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--txt-m);margin-bottom:10px}
+.eyebrow.acc{color:var(--acc)}.eyebrow.red{color:var(--red)}.eyebrow.pur{color:var(--pur)}
+h2{font-size:24px;font-weight:700;line-height:1.2;margin-bottom:12px}
+h3{font-size:14px;font-weight:600;margin-bottom:8px}
+.lead{font-size:13px;color:var(--txt-m);line-height:1.7;max-width:680px;margin-bottom:20px}
+
+/* ── Cards ── */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;position:relative;overflow:hidden}
+.ca::before,.cr::before,.cg::before,.cam::before,.cp::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.ca::before{background:linear-gradient(90deg,var(--acc),transparent)}
+.cr::before{background:linear-gradient(90deg,var(--red),transparent)}
+.cg::before{background:linear-gradient(90deg,var(--grn),transparent)}
+.cam::before{background:linear-gradient(90deg,var(--amb),transparent)}
+.cp::before{background:linear-gradient(90deg,var(--pur),transparent)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* ── Tags ── */
+.tag{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:1px}
+.tr{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,68,102,.3)}
+.tg{background:var(--grn-dim);color:var(--grn);border:1px solid rgba(0,230,118,.3)}
+.ta{background:var(--acc-dim);color:var(--acc);border:1px solid rgba(0,200,255,.3)}
+.tam{background:var(--amb-dim);color:var(--amb);border:1px solid rgba(255,179,0,.3)}
+.tp{background:var(--pur-dim);color:var(--pur);border:1px solid rgba(179,136,255,.3)}
+
+/* ── Misc ── */
+.mono{font-family:var(--mono)}
+.divider{border:none;border-top:1px solid var(--bdr);margin:18px 0}
+.stat{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1}
+.lbl{font-size:10px;color:var(--txt-m);margin-top:4px}
+.mt8{margin-top:8px}.mt16{margin-top:16px}.mt20{margin-top:20px}.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+
+/* ── Alarm ── */
+.alarm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0}
+.alarm-card{border-radius:var(--r);padding:14px 8px;text-align:center;border:1px solid var(--bdr);background:var(--surf);transition:all .4s}
+.alarm-card.firing{border-color:var(--red);background:var(--red-dim);animation:ap 1.2s infinite}
+.alarm-card.ok{border-color:rgba(0,230,118,.3);background:var(--grn-dim)}
+@keyframes ap{0%,100%{box-shadow:0 0 0 0 rgba(255,68,102,0)}50%{box-shadow:0 0 0 6px rgba(255,68,102,.2)}}
+.alarm-nf{font-family:var(--mono);font-size:12px;font-weight:600;margin-bottom:4px}
+.alarm-st{font-size:10px}
+
+/* ── Pipeline ── */
+.pipeline{display:flex;align-items:center;gap:0;overflow-x:auto;margin:20px 0;padding-bottom:4px}
+.pipe-s{flex:1;min-width:110px;background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 10px;text-align:center;transition:all .4s}
+.pipe-s.lit{border-color:var(--acc);background:rgba(0,200,255,0.08);box-shadow:0 0 16px rgba(0,200,255,0.2)}
+.pipe-s.lit .pipe-s-name{color:#fff}
+.pipe-s-name{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--acc);margin-bottom:3px;transition:color .4s}
+.pipe-s-desc{font-size:9px;color:var(--txt-m);line-height:1.4}
+.pipe-arr{width:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--txt-d);font-size:15px}
+.pipe-arr.lit{color:var(--acc)}
+
+/* ── Scenario tabs ── */
+.stabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.stab{font-family:var(--mono);font-size:10px;padding:5px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--bdr);background:transparent;color:var(--txt-m);transition:all .2s}
+.stab:hover{border-color:var(--bdr2);color:var(--txt)}
+.stab.active{border-color:var(--acc);color:var(--acc);background:var(--acc-dim)}
+.cand-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cand-rank{width:16px;color:var(--txt-d);font-size:9px;font-family:var(--mono);text-align:right}
+.cand-nf{width:36px;color:var(--txt);font-size:10px;font-family:var(--mono)}
+.cand-bg{flex:1;height:5px;background:var(--bdr);border-radius:2px;overflow:hidden}
+.cand-bar{height:100%;border-radius:2px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.cand-sc{width:42px;text-align:right;font-size:9px;font-family:var(--mono);color:var(--txt-m)}
+.rca-big{font-family:var(--mono);font-size:48px;font-weight:700;color:var(--acc);line-height:1;transition:color .5s}
+.rca-big.crit{color:var(--red)}
+
+/* ── Slice compare ── */
+.slice-compare{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:16px}
+.slice-hdr{padding:10px 16px;font-family:var(--mono);font-size:11px;display:flex;align-items:center;justify-content:space-between}
+.slice-hdr.infra{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);border-bottom:none}
+.slice-hdr.iso{background:rgba(0,200,255,.08);border:1px solid rgba(0,200,255,.3);border-bottom:none}
+.slice-body{background:var(--surf);padding:14px;border:1px solid var(--bdr);border-top:none}
+.slice-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bdr)}
+.slice-row:last-child{border-bottom:none}
+.slice-nm{width:48px;font-family:var(--mono);font-size:10px;color:var(--txt-m)}
+.slice-nfs{display:flex;gap:5px;flex-wrap:wrap;flex:1}
+.nf-chip{font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;border:1px solid}
+.nf-chip.normal{background:var(--surf2);border-color:var(--bdr2);color:var(--txt-m)}
+.nf-chip.faulted{background:rgba(255,68,102,.15);border-color:var(--red);color:var(--red)}
+.nf-chip.absent{background:transparent;border-color:var(--txt-d);color:var(--txt-d);border-style:dashed}
+.nf-chip.facc{background:var(--acc-dim);border-color:var(--acc);color:var(--acc)}
+.slice-imp{width:62px;text-align:right}
+.breadth-meter{margin-top:14px;padding:12px;background:var(--surf2);border:1px solid var(--bdr2);border-radius:var(--r);display:flex;align-items:center;gap:12px}
+.breadth-lbl{font-family:var(--mono);font-size:9px;color:var(--txt-m);width:80px}
+.breadth-bg{flex:1;height:7px;background:var(--bdr);border-radius:4px;overflow:hidden}
+.breadth-bar{height:100%;border-radius:4px}
+.breadth-val{font-family:var(--mono);font-size:13px;font-weight:600;width:44px;text-align:right}
+.sowhat{margin-top:14px;padding:14px 18px;border-radius:var(--r);border-left:3px solid;background:var(--surf2)}
+.sowhat.infra{border-color:var(--red)}.sowhat.iso{border-color:var(--acc)}
+.sowhat-lbl{font-family:var(--mono);font-size:8px;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px}
+.sowhat-txt{font-size:11px;line-height:1.6}
+
+/* ── Recal ── */
+.recal-loop{display:flex;align-items:center;gap:0;margin:20px 0;flex-wrap:wrap;justify-content:center}
+.loop-node{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:12px 16px;text-align:center;min-width:120px;transition:all .4s}
+.loop-node.lit{border-color:var(--pur);background:var(--pur-dim);box-shadow:0 0 12px rgba(179,136,255,.2)}
+.loop-nm{font-family:var(--mono);font-size:9px;color:var(--acc);margin-bottom:2px}
+.loop-node.lit .loop-nm{color:var(--pur)}
+.loop-desc{font-size:9px;color:var(--txt-m)}
+.loop-arr{padding:0 5px;color:var(--txt-d);font-size:14px}
+.wt-row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.wt-edge{width:70px;color:var(--txt-m);font-size:9px;font-family:var(--mono)}
+.wt-bg{flex:1;height:5px;background:var(--bdr);border-radius:3px}
+.wt-bar{height:100%;border-radius:3px;transition:width 1.6s ease}
+.wt-val{width:36px;text-align:right;font-size:9px;font-family:var(--mono)}
+
+/* ── Prior art ── */
+.prior-tbl{width:100%;border-collapse:collapse;font-size:11px;margin-top:14px}
+.prior-tbl th{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--txt-m);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr);background:var(--surf2)}
+.prior-tbl td{padding:10px 12px;border-bottom:1px solid var(--bdr);vertical-align:top;color:var(--txt);transition:background .4s}
+.prior-tbl tr:last-child td{border-bottom:none}
+.prior-tbl tr.us{background:rgba(0,200,255,.04)}
+.prior-tbl tr.us td:first-child{color:var(--acc);font-weight:600}
+.chk{color:var(--grn)}.crs{color:var(--red)}.prt{color:var(--amb)}
+.gap-highlight{background:rgba(255,68,102,.12) !important}
+
+/* ── Live ── */
+.live-json{margin-top:12px;background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);padding:12px 14px;font-family:var(--mono);font-size:10px;color:var(--txt-m);max-height:180px;overflow-y:auto;line-height:1.6}
+.live-json .key{color:var(--acc)}.live-json .vn{color:var(--grn)}.live-json .vs{color:var(--amb)}.live-json .vi{color:var(--acc);font-weight:600}.live-json .vr{color:var(--red);font-weight:600}
+.api-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.api-inp{flex:1;background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt);font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:4px;outline:none;transition:border-color .2s}
+.api-inp:focus{border-color:var(--acc)}
+.btn{font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:7px 16px;border-radius:4px;cursor:pointer;border:1px solid;transition:all .2s}
+.btn-p{background:var(--acc-dim);border-color:var(--acc);color:var(--acc)}.btn-p:hover{background:rgba(0,200,255,.2)}
+.btn-g{background:transparent;border-color:var(--bdr2);color:var(--txt-m)}.btn-g:hover{border-color:var(--txt-m);color:var(--txt)}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--txt-d);flex-shrink:0}
+.sdot.conn{background:var(--grn);animation:dp 2s infinite}.sdot.err{background:var(--red)}
+@keyframes dp{0%,100%{opacity:1}50%{opacity:.5}}
+.inj-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.inj-btn{font-family:var(--mono);font-size:10px;padding:6px 14px;background:var(--surf2);border:1px solid var(--bdr2);color:var(--txt-m);border-radius:4px;cursor:pointer;transition:all .2s}
+.inj-btn:hover,.inj-btn.active{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+.lrca{display:none}.lrca.vis{display:block}
+.rca-live{font-family:var(--mono);font-size:40px;font-weight:700;color:var(--acc);line-height:1;transition:color .5s}
+.rca-live.crit{color:var(--red)}
+
+/* ════════════════════════════════════════
+   DEMO ENGINE STYLES
+   ════════════════════════════════════════ */
+
+/* Dim overlay */
+.dim-overlay{position:fixed;inset:0;background:rgba(7,9,15,.82);z-index:500;pointer-events:none;opacity:0;transition:opacity .5s}
+.dim-overlay.on{opacity:1}
+
+/* Spotlit element */
+.spotlit{position:relative!important;z-index:502!important;border-radius:8px;box-shadow:0 0 0 3px var(--acc),0 0 40px rgba(0,200,255,.25)!important;transition:box-shadow .4s}
+.spotlit-red{position:relative!important;z-index:502!important;border-radius:8px;box-shadow:0 0 0 3px var(--red),0 0 40px rgba(255,68,102,.25)!important}
+
+/* Look-here pointer */
+.look-ptr{position:fixed;z-index:600;display:none;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+.look-ptr.show{display:flex}
+.ptr-bubble{background:var(--acc);color:#000;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;padding:5px 12px;border-radius:20px;white-space:nowrap}
+.ptr-arrow-down{font-size:22px;color:var(--acc);animation:ptrBounce 1s ease-in-out infinite}
+.ptr-arrow-up{font-size:22px;color:var(--acc);animation:ptrBounceUp 1s ease-in-out infinite}
+.ptr-arrow-left{font-size:22px;color:var(--acc);animation:ptrBounceLeft 1s ease-in-out infinite}
+.ptr-arrow-right{font-size:22px;color:var(--acc);animation:ptrBounceRight 1s ease-in-out infinite}
+@keyframes ptrBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes ptrBounceUp{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+@keyframes ptrBounceLeft{0%,100%{transform:translateX(0)}50%{transform:translateX(-8px)}}
+@keyframes ptrBounceRight{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+
+/* Narration bar */
+.nar-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:2px solid var(--acc);z-index:600;padding:14px 24px;display:flex;align-items:center;gap:16px;transform:translateY(100%);transition:transform .4s;box-shadow:0 -8px 32px rgba(0,200,255,.08)}
+.nar-bar.show{transform:translateY(0)}
+.nar-step-badge{font-family:var(--mono);font-size:10px;background:var(--acc-dim);border:1px solid var(--acc);color:var(--acc);padding:3px 10px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.nar-content{flex:1;min-width:0}
+.nar-title{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--acc);margin-bottom:3px}
+.nar-desc{font-size:11px;color:var(--txt-m);line-height:1.5;white-space:normal}
+.nar-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.nar-dots{display:flex;gap:5px}
+.nar-dot{width:7px;height:7px;border-radius:50%;background:var(--bdr2);transition:background .3s}
+.nar-dot.done{background:var(--acc)}
+.nar-dot.curr{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+.nar-btns{display:flex;gap:8px}
+.nar-btn{font-family:var(--mono);font-size:10px;padding:5px 14px;border-radius:4px;cursor:pointer;border:1px solid;transition:all .2s}
+.nar-btn-p{background:var(--acc-dim);border-color:var(--acc);color:var(--acc)}
+.nar-btn-p:hover{background:rgba(0,200,255,.2)}
+.nar-btn-g{background:transparent;border-color:var(--bdr2);color:var(--txt-m)}
+.nar-btn-g:hover{border-color:var(--txt-m);color:var(--txt)}
+.nar-btn-x{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.nar-btn-x:hover{background:rgba(255,68,102,.2)}
+
+/* Start Demo button */
+.start-demo-btn{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:13px;letter-spacing:2px;padding:14px 32px;border-radius:6px;cursor:pointer;border:1px solid var(--acc);background:var(--acc-dim);color:var(--acc);transition:all .3s;margin-top:24px}
+.start-demo-btn:hover{background:rgba(0,200,255,.2);box-shadow:0 0 20px rgba(0,200,255,.15)}
+.start-demo-btn .play-icon{font-size:18px}
+
+/* Glossary tooltip */
+.gloss{border-bottom:1px dashed var(--txt-d);cursor:help;position:relative}
+.gloss-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surf2);border:1px solid var(--acc);border-radius:var(--r);padding:8px 12px;font-size:10px;color:var(--txt);white-space:nowrap;z-index:800;min-width:200px;max-width:320px;white-space:normal;line-height:1.5;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.gloss:hover .gloss-tip{display:block}
+
+/* Demo mode banner */
+.demo-banner{display:none;position:fixed;top:48px;left:0;right:0;background:rgba(0,200,255,.1);border-bottom:1px solid rgba(0,200,255,.3);z-index:499;padding:6px 24px;font-family:var(--mono);font-size:10px;color:var(--acc);letter-spacing:1px;text-align:center}
+.demo-banner.show{display:block}
+
+/* Keyboard hint */
+.key-hint{position:fixed;bottom:80px;right:24px;z-index:601;font-family:var(--mono);font-size:9px;color:var(--txt-d);display:none;flex-direction:column;gap:4px;text-align:right}
+.key-hint.show{display:flex}
+.key-hint kbd{background:var(--surf2);border:1px solid var(--bdr2);border-radius:3px;padding:1px 5px;font-size:9px;color:var(--txt-m)}
+</style>
+</head>
+<body>
+
+<!-- ── Overlay ── -->
+<div id="overlay" class="dim-overlay"></div>
+
+<!-- ── Look-here pointer ── -->
+<div id="lookPtr" class="look-ptr">
+  <div class="ptr-bubble" id="ptrText">WATCH HERE</div>
+  <div id="ptrArrow" class="ptr-arrow-down">▼</div>
+</div>
+
+<!-- ── Narration bar ── -->
+<div id="narBar" class="nar-bar">
+  <div class="nar-step-badge" id="narStep">1 / 9</div>
+  <div class="nar-content">
+    <div class="nar-title" id="narTitle"></div>
+    <div class="nar-desc" id="narDesc"></div>
+  </div>
+  <div class="nar-right">
+    <div class="nar-dots" id="narDots"></div>
+    <div class="nar-btns">
+      <button class="nar-btn nar-btn-g" onclick="prevStep()">◀ Prev</button>
+      <button class="nar-btn nar-btn-p" onclick="nextStep()">Next ▶</button>
+      <button class="nar-btn nar-btn-x" onclick="exitDemo()">✕ Exit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Demo banner ── -->
+<div id="demoBanner" class="demo-banner">▶ GUIDED DEMO RUNNING — Step <span id="bannerStep">1</span> of 9 &nbsp;|&nbsp; Press → for next, ← for prev, Esc to exit</div>
+
+<!-- ── Keyboard hint ── -->
+<div id="keyHint" class="key-hint">
+  <div><kbd>→</kbd> Next step</div>
+  <div><kbd>←</kbd> Prev step</div>
+  <div><kbd>Esc</kbd> Exit demo</div>
+</div>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-logo">CAUSAL<span>5G</span><span class="nav-v">Demo v3</span></div>
+  <div class="nav-links">
+    <a href="#s-prob">Problem</a>
+    <a href="#s-pipe">Pipeline</a>
+    <a href="#s-l1">NF Attribution</a>
+    <a href="#s-proof">The Proof</a>
+    <a href="#s-recal">Recalibration</a>
+    <a href="#s-novel">Prior Art</a>
+    <a href="#s-live">Live</a>
+  </div>
+  <div class="badge">PATENT PENDING</div>
+</nav>
+
+<!-- ══════════════════════════════════════
+     HERO
+     ══════════════════════════════════════ -->
+<section id="s-hero" style="padding:56px 32px 40px;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,200,255,0.06) 0%,transparent 60%)">
+  <div class="eyebrow acc">US Provisional Patent — March 2026</div>
+  <h2 style="font-size:32px">When your 5G network breaks,<br>who broke it?</h2>
+  <p class="lead">
+    Current monitoring fires <span style="color:var(--red)">6 alarms simultaneously</span>.
+    <span class="gloss">Causal5G<span class="gloss-tip">A patent-pending system that uses Granger causality, PC algorithm, and Bayesian inference to identify the exact root cause NF in a 5G SA core network.</span></span>
+    tells you the <span style="color:var(--acc)">exact NF</span>, which
+    <span class="gloss">slices<span class="gloss-tip">Network Slices (S-NSSAIs) are logical end-to-end 5G networks with different NF compositions. eMBB, URLLC, and mIoT are the three standard slice types.</span></span>
+    are affected, and automatically remediates — all within 30 seconds.
+  </p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <span class="tag ta">Claim 1 · Bi-level Causal DAG</span>
+    <span class="tag tr">Claim 2 · Four-Domain Hierarchy</span>
+    <span class="tag tam">Claim 3 · Confidence-Gated Remediation</span>
+    <span class="tag tp">Claim 4 · Feedback Recalibration</span>
+  </div>
+  <div class="g4" style="max-width:620px;margin-bottom:28px">
+    <div class="card ca"><div class="stat" style="color:var(--acc)">100%</div><div class="lbl">Detection rate<br>5 fault scenarios</div></div>
+    <div class="card cr"><div class="stat" style="color:var(--red)">~30s</div><div class="lbl">Root cause<br>identification</div></div>
+    <div class="card cg"><div class="stat" style="color:var(--grn)">453</div><div class="lbl">Tests passing<br>Days 1–20</div></div>
+    <div class="card cam"><div class="stat" style="color:var(--amb)">4</div><div class="lbl">Patent claims<br>all live in API</div></div>
+  </div>
+  <button class="start-demo-btn" onclick="startDemo()">
+    <span class="play-icon">▶</span>
+    START GUIDED DEMO
+  </button>
+  <div style="margin-top:12px;font-size:11px;color:var(--txt-d);font-family:var(--mono)">9 steps · ~3 minutes · works offline</div>
+</section>
+
+<!-- ══════════════════════════════════════
+     PROBLEM
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-prob">The Problem</div>
+<section>
+  <div class="eyebrow red">Current tools show symptoms, not causes</div>
+  <p class="lead">PCF times out. Within seconds, 6 different NFs fire alarms simultaneously. You have no idea where to start.</p>
+  <div style="font-family:var(--mono);font-size:9px;color:var(--txt-m);margin-bottom:6px">What your NOC sees — PCF timeout at T+5s</div>
+  <div id="alarmGrid" class="alarm-grid">
+    <div class="alarm-card" id="a-nrf"><div class="alarm-nf">NRF</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-amf"><div class="alarm-nf">AMF</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-smf"><div class="alarm-nf">SMF</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-pcf"><div class="alarm-nf">PCF</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-udm"><div class="alarm-nf">UDM</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-udr"><div class="alarm-nf">UDR</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-ausf"><div class="alarm-nf">AUSF</div><div class="alarm-st">...</div></div>
+    <div class="alarm-card" id="a-nssf"><div class="alarm-nf">NSSF</div><div class="alarm-st">...</div></div>
+  </div>
+  <div id="alarmAnnotation" style="background:var(--surf2);border:1px solid var(--bdr2);border-radius:var(--r);padding:12px 16px;font-size:11px;color:var(--txt-m)">
+    <strong style="color:var(--red)">Current tooling verdict:</strong> "6 NFs alarming simultaneously. Latency elevated across AMF, SMF, PCF, UDM, AUSF, NSSF."
+    Your operator is now guessing. <strong style="color:var(--txt)">Who do you call first?</strong>
+  </div>
+  <div class="g2 mt16">
+    <div class="card cr"><h3 style="color:var(--red)">Threshold-based alerting</h3><p style="font-size:11px;color:var(--txt-m);margin-top:6px;line-height:1.7">Every NF that crosses a KPI threshold fires simultaneously. In a cascade, that's every downstream NF — 6 alarms for a single root cause. Alert storms obscure signal.</p></div>
+    <div class="card cr"><h3 style="color:var(--red)">Correlation-based grouping</h3><p style="font-size:11px;color:var(--txt-m);margin-top:6px;line-height:1.7">AIOps platforms group co-occurring alarms by time proximity. They cannot tell you which caused the other — or that mIoT is completely fine.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     PIPELINE
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-pipe">How It Works</div>
+<section>
+  <div class="eyebrow acc">Five-stage causal inference pipeline</div>
+  <p class="lead">
+    <span class="gloss">Granger causality<span class="gloss-tip">A statistical test that determines if one time series causally precedes another — not just correlates. If PCF metrics degraded 8s before AMF, Granger establishes PCF → AMF direction.</span></span>
+    +
+    <span class="gloss">PC algorithm<span class="gloss-tip">Peter-Clark algorithm: a constraint-based causal discovery method that builds a directed acyclic graph (DAG) from conditional independence tests between NF metric time series.</span></span>
+    + Bayesian inference, fused across four telemetry streams, producing a
+    <span class="gloss">bi-level causal DAG<span class="gloss-tip">Two-layer directed acyclic graph: Level-1 maps NF-to-NF causal edges; Level-2 maps the fault to specific network slices. Both layers in a single FaultReport.</span></span>
+    every 30 seconds.
+  </p>
+  <div id="pipelineWrap" class="pipeline">
+    <div class="pipe-s" id="ps0" style="border-color:rgba(0,200,255,.4)"><div class="pipe-s-name">MTIE</div><div class="pipe-s-desc">Multi-modal telemetry<br>SBI · PFCP · Prometheus<br><span style="color:var(--acc)">1,752 events/min</span></div></div>
+    <div class="pipe-arr" id="pa0">→</div>
+    <div class="pipe-s" id="ps1"><div class="pipe-s-name">CIE</div><div class="pipe-s-desc">Granger causality<br>PC algorithm</div></div>
+    <div class="pipe-arr" id="pa1">→</div>
+    <div class="pipe-s" id="ps2"><div class="pipe-s-name">DCGM</div><div class="pipe-s-desc">Dynamic causal graph<br>3GPP priors + live edges</div></div>
+    <div class="pipe-arr" id="pa2">→</div>
+    <div class="pipe-s" id="ps3" style="border-color:rgba(0,200,255,.4)"><div class="pipe-s-name">RCSM</div><div class="pipe-s-desc">Root cause scoring<br>Centrality 40%<br>Temporal 30% · Bayes 30%</div></div>
+    <div class="pipe-arr" id="pa3">→</div>
+    <div class="pipe-s" id="ps4" style="border-color:rgba(0,200,255,.4)"><div class="pipe-s-name">Level-2</div><div class="pipe-s-desc">Slice sub-DAG<br>SliceEnsembleAttributor<br><span style="color:var(--acc)">New in patent</span></div></div>
+    <div class="pipe-arr" id="pa4">→</div>
+    <div class="pipe-s" id="ps5" style="border-color:rgba(0,230,118,.4)"><div class="pipe-s-name">FRG + RAE</div><div class="pipe-s-desc">Fault report<br>Remediation<br>Recalibration</div></div>
+  </div>
+  <div class="g3">
+    <div class="card ca"><div class="eyebrow acc mb8">Claim 1 · Bi-level DAG</div><p style="font-size:11px;color:var(--txt-m);line-height:1.6">Level-1: NF-layer attribution. Level-2: slice sub-DAG. Two levels fused into a single FaultReport delivered every 30 seconds.</p></div>
+    <div class="card cr"><div class="eyebrow red mb8">Claim 2 · Four-Domain</div><p style="font-size:11px;color:var(--txt-m);line-height:1.6">Hierarchical DAG: RAN → Transport → Core → Cloud. Cross-domain edges for O-RAN. 3GPP TS 32.111-compliant RCA reports.</p></div>
+    <div class="card cam"><div class="eyebrow" style="color:var(--amb);margin-bottom:8px">Claims 3 + 4</div><p style="font-size:11px;color:var(--txt-m);line-height:1.6">Confidence-gated closed-loop remediation (threshold 0.65). Feedback-driven DAG recalibration from remediation outcomes.</p></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     LEVEL-1
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-l1">Claim 1 · Level-1 NF Attribution</div>
+<section>
+  <div class="eyebrow acc">Correct NF root cause — all 5 scenarios</div>
+  <p class="lead">Composite score = <span class="gloss">0.4×centrality<span class="gloss-tip">Graph centrality measures how many causal paths pass through a node. The root cause NF is always on more causal paths than its downstream effects.</span></span> + <span class="gloss">0.3×temporal precedence<span class="gloss-tip">The root cause metric degrades BEFORE downstream metrics. Granger lag analysis captures this timing. PCF degraded 8 seconds before AMF in the PCF-timeout scenario.</span></span> + <span class="gloss">0.3×Bayesian posterior<span class="gloss-tip">Prior probability from 3GPP NF dependency topology, updated with observed anomaly patterns using Bayes' theorem.</span></span>. 5/5 injected faults correctly identified.</p>
+  <div class="stabs" id="stabs"></div>
+  <div class="g2">
+    <div class="card ca" id="l1ResultCard">
+      <div class="eyebrow mb8">Root cause</div>
+      <div class="rca-big" id="l1nf">PCF</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <span class="tag tr" id="l1sev">CRITICAL</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--txt-m)" id="l1sc">score 1.0100</span>
+      </div>
+      <div style="font-size:11px;color:var(--txt-m);margin-top:10px;line-height:1.6" id="l1cat">Processing Error — Policy Control Failure</div>
+      <div style="margin-top:10px"><div style="font-size:10px;color:var(--txt-m);margin-bottom:4px">Evidence</div><ul id="l1ev" style="list-style:none;font-size:10px;color:var(--txt-m);line-height:2"></ul></div>
+    </div>
+    <div class="card" id="l1CandCard">
+      <div class="eyebrow mb12">All candidates — composite score</div>
+      <div id="l1cands"></div>
+      <hr class="divider">
+      <div class="eyebrow mb8">Score formula</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--txt-m);line-height:2">
+        <span style="color:var(--acc)">0.4</span> × centrality &nbsp;
+        <span style="color:var(--acc)">0.3</span> × temporal precedence &nbsp;
+        <span style="color:var(--acc)">0.3</span> × Bayesian posterior
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     SLICE PROOF
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-proof">Claim 1 · Level-2 · The Patent's Canonical Proof</div>
+<section>
+  <div class="eyebrow acc">What no current system can tell you</div>
+  <p class="lead">When PCF times out, <em>only eMBB and URLLC slices are affected</em>. mIoT traffic runs fine — it has no PCF in its NF set. Current monitoring cannot make this distinction. Causal5G's bi-level DAG can.</p>
+  <div id="sliceCompare" class="slice-compare">
+    <div>
+      <div class="slice-hdr infra"><span>Scenario: <strong style="color:var(--red)">NRF crash</strong></span><span class="tag tr">infrastructure-wide</span></div>
+      <div class="slice-body">
+        <div class="slice-row"><div class="slice-nm">eMBB</div><div class="slice-nfs"><span class="nf-chip faulted">NRF</span><span class="nf-chip normal">AMF</span><span class="nf-chip normal">SMF</span><span class="nf-chip normal">PCF</span></div><div class="slice-imp"><span class="tag tr">DOWN</span></div></div>
+        <div class="slice-row"><div class="slice-nm">URLLC</div><div class="slice-nfs"><span class="nf-chip faulted">NRF</span><span class="nf-chip normal">AMF</span><span class="nf-chip normal">SMF</span><span class="nf-chip normal">PCF</span></div><div class="slice-imp"><span class="tag tr">DOWN</span></div></div>
+        <div class="slice-row"><div class="slice-nm">mIoT</div><div class="slice-nfs"><span class="nf-chip faulted">NRF</span><span class="nf-chip normal">AMF</span><span class="nf-chip normal">SMF</span></div><div class="slice-imp"><span class="tag tr">DOWN</span></div></div>
+        <div class="breadth-meter"><div class="breadth-lbl">Slice breadth</div><div class="breadth-bg"><div class="breadth-bar" style="width:100%;background:var(--red)"></div></div><div class="breadth-val" style="color:var(--red)">1.000</div><span class="tag tr">infra-wide</span></div>
+      </div>
+      <div class="sowhat infra mt16"><div class="sowhat-lbl" style="color:var(--red)">Operator action</div><div class="sowhat-txt"><strong style="color:var(--red)">All-hands emergency.</strong> NRF is shared infrastructure — every slice, every UE is affected. breadth=1.0 confirms full outage.</div></div>
+    </div>
+    <div>
+      <div class="slice-hdr iso"><span>Scenario: <strong style="color:var(--acc)">PCF timeout</strong></span><span class="tag ta">slice-isolated</span></div>
+      <div class="slice-body">
+        <div class="slice-row"><div class="slice-nm">eMBB</div><div class="slice-nfs"><span class="nf-chip facc">PCF</span><span class="nf-chip normal">AMF</span><span class="nf-chip normal">SMF</span></div><div class="slice-imp"><span class="tag tr">DOWN</span></div></div>
+        <div class="slice-row"><div class="slice-nm">URLLC</div><div class="slice-nfs"><span class="nf-chip facc">PCF</span><span class="nf-chip normal">AMF</span><span class="nf-chip normal">SMF</span></div><div class="slice-imp"><span class="tag tr">DOWN</span></div></div>
+        <div class="slice-row"><div class="slice-nm">mIoT</div><div class="slice-nfs"><span class="nf-chip absent">PCF ✗</span><span class="nf-chip normal">AMF</span><span class="nf-chip normal">SMF</span></div><div class="slice-imp"><span class="tag tg">OK ✓</span></div></div>
+        <div class="breadth-meter"><div class="breadth-lbl">Slice breadth</div><div class="breadth-bg"><div class="breadth-bar" style="width:66.7%;background:var(--acc)"></div></div><div class="breadth-val" style="color:var(--acc)">0.667</div><span class="tag ta">slice-isolated</span></div>
+      </div>
+      <div class="sowhat iso mt16"><div class="sowhat-lbl" style="color:var(--acc)">Operator action</div><div class="sowhat-txt"><strong style="color:var(--acc)">Targeted fix.</strong> PCF absent from mIoT — mIoT traffic completely unaffected. Page the PCF team only. breadth=0.667 proves this is slice-specific.</div></div>
+    </div>
+  </div>
+  <div class="card mt20" style="background:var(--surf2)">
+    <div class="eyebrow mb12">Level-2 sweep — all 5 fault scenarios</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>
+      <th style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;color:var(--txt-m);border-bottom:1px solid var(--bdr);background:var(--surf)">Scenario</th>
+      <th style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;color:var(--txt-m);border-bottom:1px solid var(--bdr);background:var(--surf)">NF</th>
+      <th style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;color:var(--txt-m);border-bottom:1px solid var(--bdr);background:var(--surf)">Affected</th>
+      <th style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;color:var(--txt-m);border-bottom:1px solid var(--bdr);background:var(--surf)">Breadth</th>
+      <th style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;color:var(--txt-m);border-bottom:1px solid var(--bdr);background:var(--surf)">Isolation</th>
+      <th style="font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;color:var(--txt-m);border-bottom:1px solid var(--bdr);background:var(--surf)">Ensemble</th>
+    </tr></thead><tbody id="sweepTbl"></tbody></table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     RECALIBRATION
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-recal">Claim 4 · Feedback-Driven DAG Recalibration</div>
+<section>
+  <div class="eyebrow pur">The system learns from every remediation</div>
+  <p class="lead">When remediation succeeds, causal edge weights are reinforced. When it fails, they are penalised. The next fault diagnosis uses the updated DAG. No existing 5G RCA system does this.</p>
+  <div id="recalLoopWrap" class="recal-loop">
+    <div class="loop-node" id="ln0"><div class="loop-nm">FAULT DETECTED</div><div class="loop-desc">RCSM scores PCF<br>score=1.01</div></div>
+    <div class="loop-arr">→</div>
+    <div class="loop-node" id="ln1"><div class="loop-nm">RAE REMEDIATES</div><div class="loop-desc">rollback_config<br>on PCF (Claim 3)</div></div>
+    <div class="loop-arr">→</div>
+    <div class="loop-node" id="ln2"><div class="loop-nm">VERIFIER</div><div class="loop-desc">post-score &lt; 0.30?<br>→ CLEARED ✓</div></div>
+    <div class="loop-arr">→</div>
+    <div class="loop-node" id="ln3" style="border-color:rgba(179,136,255,.5)"><div class="loop-nm" style="color:var(--pur)">RECALIBRATOR</div><div class="loop-desc">outcome=1.0<br>reinforce PCF edges</div></div>
+    <div class="loop-arr">→</div>
+    <div class="loop-node" id="ln4" style="border-color:rgba(179,136,255,.5)"><div class="loop-nm" style="color:var(--pur)">DCGM UPDATED</div><div class="loop-desc">pcf→smf weight<br>0.210 → 0.267</div></div>
+    <div class="loop-arr" style="color:var(--pur)">↻</div>
+  </div>
+  <div class="g2">
+    <div class="card cp" id="weightDemoWrap">
+      <div class="eyebrow pur mb12">Edge weight shift — 3× successful NRF remediation</div>
+      <div class="wt-row"><span class="wt-edge">nrf→amf</span><div class="wt-bg"><div class="wt-bar" id="wb0" style="width:0%;background:var(--grn)"></div></div><span class="wt-val" style="color:var(--grn)" id="wv0">0.000</span></div>
+      <div class="wt-row"><span class="wt-edge">nrf→smf</span><div class="wt-bg"><div class="wt-bar" id="wb1" style="width:0%;background:var(--grn)"></div></div><span class="wt-val" style="color:var(--grn)" id="wv1">0.000</span></div>
+      <div class="wt-row"><span class="wt-edge">nrf→pcf</span><div class="wt-bg"><div class="wt-bar" id="wb2" style="width:0%;background:var(--grn)"></div></div><span class="wt-val" style="color:var(--grn)" id="wv2">0.000</span></div>
+      <div class="wt-row"><span class="wt-edge">nrf→udm</span><div class="wt-bg"><div class="wt-bar" id="wb3" style="width:0%;background:var(--grn)"></div></div><span class="wt-val" style="color:var(--grn)" id="wv3">0.000</span></div>
+      <div style="margin-top:10px;font-size:10px;color:var(--txt-m)"><span style="color:var(--grn)">■</span> reinforced after 3× success &nbsp;<span style="color:var(--grn);font-family:var(--mono)">+30% weight</span></div>
+    </div>
+    <div class="card">
+      <div class="eyebrow mb12">Recalibration snapshot in every FaultReport</div>
+      <div class="live-json">
+        <span class="key">"recalibration_snapshot"</span>: {<br>
+        &nbsp;&nbsp;<span class="key">"cycle_count"</span>: <span class="vn">3</span>,<br>
+        &nbsp;&nbsp;<span class="key">"edges_tracked"</span>: <span class="vn">6</span>,<br>
+        &nbsp;&nbsp;<span class="key">"reinforced_edges"</span>: <span class="vn">4</span>,<br>
+        &nbsp;&nbsp;<span class="key">"penalised_edges"</span>: <span class="vn">0</span>,<br>
+        &nbsp;&nbsp;<span class="key">"edge_weights"</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→amf"</span>: <span class="vn">1.2595</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→smf"</span>: <span class="vn">1.2595</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→pcf"</span>: <span class="vn">1.2595</span><br>
+        &nbsp;&nbsp;}<br>}
+      </div>
+      <div style="font-size:10px;color:var(--txt-m);margin-top:10px;line-height:1.7">Every <code style="font-size:9px;color:var(--acc)">GET /rca</code> response carries both the bi-level attribution and the full recalibration state. A single API call proves all 4 claims.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     PRIOR ART
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-novel">Prior Art Comparison</div>
+<section>
+  <div class="eyebrow" style="color:var(--amb)">What doesn't exist in the current world</div>
+  <p class="lead">Every ✗ in the table is a capability gap the patent covers. No existing system implements all five together.</p>
+  <div id="priorArtWrap">
+    <table class="prior-tbl">
+      <thead><tr><th>System</th><th>Causal RCA</th><th>Slice-topology</th><th>Feedback recal</th><th>Bi-level DAG</th><th>Conf-gated loop</th></tr></thead>
+      <tbody>
+        <tr class="us"><td>Causal5G <span class="tag ta" style="margin-left:4px">this patent</span></td><td class="chk">✓ Granger+Bayes</td><td class="chk">✓ SliceEnsemble</td><td class="chk">✓ Recalibrator</td><td class="chk">✓ L1+L2</td><td class="chk">✓ 0.65</td></tr>
+        <tr><td>Vendor EMS/NMS<br><span style="font-size:9px;color:var(--txt-d)">Nokia, Ericsson, Huawei</span></td><td class="crs">✗ Thresholds</td><td class="crs">✗ No slices</td><td class="crs">✗ Static rules</td><td class="crs">✗ Flat view</td><td class="prt">~ Playbooks</td></tr>
+        <tr><td>Generic AIOps<br><span style="font-size:9px;color:var(--txt-d)">Moogsoft, BigPanda</span></td><td class="prt">~ ML ranking</td><td class="crs">✗ Net-agnostic</td><td class="prt">~ Online ML</td><td class="crs">✗ No DAG</td><td class="prt">~ Threshold</td></tr>
+        <tr><td>O-RAN xApp<br><span style="font-size:9px;color:var(--txt-d)">O-RAN SC, OSC</span></td><td class="crs">✗ Rule-based</td><td class="crs">✗ RAN only</td><td class="crs">✗ No loop</td><td class="crs">✗ Single domain</td><td class="prt">~ Manual</td></tr>
+        <tr><td>Academic RCA<br><span style="font-size:9px;color:var(--txt-d)">CloudRCA, MicroRCA</span></td><td class="prt">~ Causal graph</td><td class="crs">✗ Not 5G aware</td><td class="crs">✗ Offline</td><td class="crs">✗ Single-level</td><td class="crs">✗ No remediation</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════
+     LIVE DEMO
+     ══════════════════════════════════════ -->
+<div class="sec-title" id="s-live">Live Demo — Connect to Running API</div>
+<section style="padding-bottom:120px">
+  <p class="lead">Start the API and inject faults in real time. Polls <code style="color:var(--acc)">GET /rca</code> every 5 seconds.</p>
+  <div class="card">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--txt-m);margin-bottom:14px;background:var(--surf2);border:1px solid var(--bdr);border-radius:4px;padding:9px 14px">
+      cd ~/causal5g &amp;&amp; uvicorn api.frg:app --port 8080 --reload
+    </div>
+    <div class="api-row">
+      <input class="api-inp" id="apiUrl" value="http://localhost:8080">
+      <button class="btn btn-p" onclick="connectApi()">Connect</button>
+      <button class="btn btn-g" onclick="disconnectApi()">Disconnect</button>
+      <div class="sdot" id="sdot" style="margin-left:6px"></div>
+      <span id="stxt" style="font-family:var(--mono);font-size:10px;color:var(--txt-m);margin-left:4px">Not connected</span>
+    </div>
+    <div class="lrca" id="livePanel">
+      <div class="g2" style="margin-bottom:16px">
+        <div>
+          <div class="eyebrow mb8">Root cause (Level-1)</div>
+          <div class="rca-live" id="lnf">—</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <span class="tag" id="lsev" style="background:transparent;border-color:var(--bdr);color:var(--txt-m)">—</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--txt-m)" id="lsc"></span>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow mb8">Slice attribution (Level-2)</div>
+          <div id="lbreadth" style="font-family:var(--mono);font-size:32px;font-weight:700;color:var(--acc)">—</div>
+          <div style="font-size:10px;color:var(--txt-m);margin-top:4px" id="lisoType">—</div>
+          <div style="margin-top:8px;font-size:10px;color:var(--txt-m)" id="lsliceAff"></div>
+        </div>
+      </div>
+      <div class="eyebrow mb8">Inject fault scenario</div>
+      <div class="inj-grid">
+        <button class="inj-btn" onclick="inject('nrf_crash',this)">nrf_crash</button>
+        <button class="inj-btn" onclick="inject('amf_crash',this)">amf_crash</button>
+        <button class="inj-btn" onclick="inject('smf_crash',this)">smf_crash</button>
+        <button class="inj-btn" onclick="inject('pcf_timeout',this)">pcf_timeout</button>
+        <button class="inj-btn" onclick="inject('udm_crash',this)">udm_crash</button>
+        <button class="inj-btn" onclick="recoverAll()" style="border-color:var(--grn);color:var(--grn)">↺ recover all</button>
+      </div>
+      <div class="eyebrow mt16 mb8">GET /rca — full response</div>
+      <div class="live-json" id="ljson">Waiting for first analysis cycle...</div>
+    </div>
+  </div>
+</section>
+
+<div style="border-top:1px solid var(--bdr);padding:20px 32px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--txt-d)">
+  CAUSAL5G · US Provisional Patent Filed March 2026 · Krishna Kumar Gattupalli · All rights reserved · Demo v3
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+const SCENS={
+  pcf_timeout:{nf:'PCF',sev:'CRITICAL',sc:1.0100,cat:'Processing Error — Policy Control Failure',ev:['PCF unreachable (reachability=0)','Container paused','Latency elevated 3.2× baseline'],cands:[{nf:'pcf',sc:1.0100},{nf:'smf',sc:0.4218},{nf:'amf',sc:0.3871},{nf:'nrf',sc:0.3654},{nf:'udm',sc:0.2910},{nf:'ausf',sc:0.2441},{nf:'nssf',sc:0.1823},{nf:'udr',sc:0.1204}]},
+  nrf_crash:{nf:'NRF',sev:'CRITICAL',sc:1.0100,cat:'Communications Alarm — NF Registry Failure',ev:['NRF unreachable (reachability=0)','Container exited','All downstream NFs cascade'],cands:[{nf:'nrf',sc:1.0100},{nf:'amf',sc:0.9100},{nf:'smf',sc:0.8730},{nf:'pcf',sc:0.8210},{nf:'udm',sc:0.7940},{nf:'ausf',sc:0.7320},{nf:'nssf',sc:0.6890},{nf:'udr',sc:0.3210}]},
+  amf_crash:{nf:'AMF',sev:'CRITICAL',sc:1.0100,cat:'Processing Error — Access Management Failure',ev:['AMF unreachable (reachability=0)','Container exited','UE registration failures'],cands:[{nf:'amf',sc:1.0100},{nf:'ausf',sc:0.4512},{nf:'smf',sc:0.3981},{nf:'nrf',sc:0.3654},{nf:'udm',sc:0.2910},{nf:'pcf',sc:0.2611},{nf:'nssf',sc:0.1823},{nf:'udr',sc:0.1204}]},
+  smf_crash:{nf:'SMF',sev:'CRITICAL',sc:1.0100,cat:'Processing Error — Session Management Failure',ev:['SMF unreachable (reachability=0)','Container exited','PDU sessions terminated'],cands:[{nf:'smf',sc:1.0100},{nf:'pcf',sc:0.4218},{nf:'amf',sc:0.3871},{nf:'nrf',sc:0.3654},{nf:'udm',sc:0.2910},{nf:'ausf',sc:0.2441},{nf:'nssf',sc:0.1823},{nf:'udr',sc:0.1204}]},
+  udm_crash:{nf:'UDM',sev:'CRITICAL',sc:1.0100,cat:'Processing Error — Subscriber Data Unavailable',ev:['UDM unreachable (reachability=0)','Container exited','Authentication failures cascade'],cands:[{nf:'udm',sc:1.0100},{nf:'ausf',sc:0.4512},{nf:'amf',sc:0.3871},{nf:'nrf',sc:0.3654},{nf:'udr',sc:0.3210},{nf:'smf',sc:0.2910},{nf:'nssf',sc:0.1823},{nf:'pcf',sc:0.1611}]}
+};
+const SWEEP=[
+  {sc:'nrf_crash',nf:'nrf',b:1.0000,aff:'3/3',t:'infrastructure-wide',ens:1.0000},
+  {sc:'amf_crash',nf:'amf',b:1.0000,aff:'3/3',t:'all-slice-nf',ens:1.0000},
+  {sc:'smf_crash',nf:'smf',b:1.0000,aff:'3/3',t:'all-slice-nf',ens:1.0000},
+  {sc:'pcf_timeout',nf:'pcf',b:0.6667,aff:'2/3',t:'slice-isolated',ens:0.8000},
+  {sc:'udm_crash',nf:'udm',b:1.0000,aff:'3/3',t:'all-slice-nf',ens:1.0000}
+];
+
+// ═══════════════════════════════════════════════════════
+// DEMO STEPS
+// ═══════════════════════════════════════════════════════
+const STEPS=[
+  {
+    title:'Welcome to Causal5G',
+    desc:'A patent-pending system that pinpoints the exact root cause of 5G core faults in ~30 seconds. Hit Next to see the problem it solves — or use → on your keyboard.',
+    target:null, scroll:'s-hero', ptr:null, action:null
+  },
+  {
+    title:'Step 1 — A PCF fault just happened',
+    desc:'One Network Function timed out. Watch what happens to your monitoring dashboard right now.',
+    target:'alarmGrid', scroll:'s-prob', ptr:{dir:'above',text:'WATCH THE CASCADE'},
+    action:'triggerAlarmCascade'
+  },
+  {
+    title:'Step 2 — 6 simultaneous alarms, zero answers',
+    desc:'Threshold-based alerting fired on every downstream NF at once. AMF, SMF, PCF, UDM, AUSF, NSSF all RED. Your NOC engineer has no idea which one caused the others.',
+    target:'alarmAnnotation', scroll:'s-prob', ptr:{dir:'above',text:'THE PROBLEM'},
+    action:null
+  },
+  {
+    title:'Step 3 — Causal5G pipeline activates',
+    desc:'While your operator is guessing, 1,752 telemetry events per minute flow through 5 stages: Granger causality + PC algorithm + Bayesian inference. Watch the pipeline light up.',
+    target:'pipelineWrap', scroll:'s-pipe', ptr:{dir:'above',text:'DATA FLOWS HERE'},
+    action:'animatePipeline'
+  },
+  {
+    title:'Step 4 — Root cause found: PCF',
+    desc:'Composite score 1.0100. PCF is ranked #1 — 2.4× higher than the next candidate (SMF at 0.4218). The other 5 alarming NFs are downstream cascade effects, not root causes.',
+    target:'l1ResultCard', scroll:'s-l1', ptr:{dir:'right',text:'ROOT CAUSE HERE'},
+    action:'selectPCF'
+  },
+  {
+    title:'Step 5 — The other NFs are effects, not causes',
+    desc:'Every NF gets a composite score. SMF, AMF, NRF, UDM all ranked much lower — confirming they alarmed because PCF failed, not independently. This separation is unique to Causal5G.',
+    target:'l1CandCard', scroll:'s-l1', ptr:{dir:'left',text:'RANKED CANDIDATES'},
+    action:null
+  },
+  {
+    title:'Step 6 — The patent\'s canonical proof',
+    desc:'PCF is absent from the mIoT slice NF set. So mIoT traffic is completely unaffected (breadth=0.667). NRF crash hits all 3 slices (breadth=1.0). No current system can tell you this difference.',
+    target:'sliceCompare', scroll:'s-proof', ptr:{dir:'above',text:'COMPARE THESE TWO'},
+    action:null
+  },
+  {
+    title:'Step 7 — Claim 4: the feedback loop',
+    desc:'After the Remediation Action Engine fixes the fault, the outcome feeds back into the recalibrator. Watch the loop: fault → remediate → verify → update DAG weights → repeat.',
+    target:'recalLoopWrap', scroll:'s-recal', ptr:{dir:'above',text:'THE LEARNING LOOP'},
+    action:'animateRecalLoop'
+  },
+  {
+    title:'Step 8 — Edge weights shift permanently',
+    desc:'3 successful NRF remediations → NRF→AMF weight: 0.270 → 0.351 (+30%). The DAG is permanently smarter. Every future NRF fault diagnosis starts with better prior knowledge.',
+    target:'weightDemoWrap', scroll:'s-recal', ptr:{dir:'left',text:'WEIGHTS CHANGING'},
+    action:'animateWeights'
+  },
+  {
+    title:'Step 9 — Nothing else does all this',
+    desc:'Nokia, Ericsson, Huawei, Moogsoft, CloudRCA, O-RAN xApps — none combine causal RCA + slice-topology + feedback recalibration + bi-level DAG. Every red ✗ is a patentable gap.',
+    target:'priorArtWrap', scroll:'s-novel', ptr:{dir:'above',text:'THE CAPABILITY GAPS'},
+    action:'highlightGaps'
+  }
+];
+
+// ═══════════════════════════════════════════════════════
+// ALARM ANIMATION (background loop)
+// ═══════════════════════════════════════════════════════
+const ALARM_NFS=['nrf','amf','smf','pcf','udm','udr','ausf','nssf'];
+const PCF_AFF=['amf','smf','pcf','udm','ausf','nssf'];
+let alarmPhase=0,alarmTimer=null;
+function alarmTick(){
+  if(alarmPhase===0){
+    ALARM_NFS.forEach(n=>{const el=document.getElementById('a-'+n);el.className='alarm-card ok';el.querySelector('.alarm-st').textContent='✓ healthy';el.querySelector('.alarm-st').style.color='var(--grn)'});
+    alarmPhase=1;
+  }else if(alarmPhase===1){
+    const el=document.getElementById('a-pcf');el.className='alarm-card firing';el.querySelector('.alarm-st').textContent='⚠ TIMEOUT';el.querySelector('.alarm-st').style.color='var(--red)';alarmPhase=2;
+  }else{
+    PCF_AFF.filter(n=>n!=='pcf').forEach(n=>{const el=document.getElementById('a-'+n);el.className='alarm-card firing';el.querySelector('.alarm-st').textContent='⚠ ALARM';el.querySelector('.alarm-st').style.color='var(--red)'});
+    ['nrf','udr'].forEach(n=>{const el=document.getElementById('a-'+n);el.className='alarm-card ok';el.querySelector('.alarm-st').textContent='✓ healthy';el.querySelector('.alarm-st').style.color='var(--grn)'});
+    alarmPhase=0;
+  }
+}
+alarmTimer=setInterval(alarmTick,2400);alarmTick();
+
+function triggerAlarmCascade(){
+  alarmPhase=0;alarmTick();
+  setTimeout(()=>alarmTick(),800);
+  setTimeout(()=>alarmTick(),1800);
+}
+
+// ═══════════════════════════════════════════════════════
+// SCENARIO TABS + LEVEL-1
+// ═══════════════════════════════════════════════════════
+let activeScen='pcf_timeout';
+function renderTabs(){
+  document.getElementById('stabs').innerHTML=Object.keys(SCENS).map(k=>`<button class="stab${k===activeScen?' active':''}" onclick="selectScen('${k}')">${k}</button>`).join('');
+}
+function selectScen(k){activeScen=k;renderTabs();renderL1();}
+function selectPCF(){selectScen('pcf_timeout');}
+function renderL1(){
+  const s=SCENS[activeScen];
+  document.getElementById('l1nf').textContent=s.nf;
+  document.getElementById('l1nf').className='rca-big'+(s.sev==='CRITICAL'?' crit':'');
+  document.getElementById('l1sc').textContent=`score ${s.sc.toFixed(4)}`;
+  document.getElementById('l1cat').textContent=s.cat;
+  const sev=document.getElementById('l1sev');sev.textContent=s.sev;sev.className=`tag ${s.sev==='CRITICAL'?'tr':'tam'}`;
+  document.getElementById('l1ev').innerHTML=s.ev.map(e=>`<li>→ ${e}</li>`).join('');
+  const max=s.cands[0].sc;
+  document.getElementById('l1cands').innerHTML=s.cands.map((c,i)=>{
+    const pct=(c.sc/max*100).toFixed(1);
+    const col=i===0?'var(--red)':i===1?'var(--amb)':'var(--acc)';
+    return `<div class="cand-row"><span class="cand-rank">#${i+1}</span><span class="cand-nf">${c.nf}</span><div class="cand-bg"><div class="cand-bar" style="width:${pct}%;background:${col}"></div></div><span class="cand-sc">${c.sc.toFixed(4)}</span></div>`;
+  }).join('');
+}
+renderTabs();renderL1();
+
+// ═══════════════════════════════════════════════════════
+// SWEEP TABLE
+// ═══════════════════════════════════════════════════════
+document.getElementById('sweepTbl').innerHTML=SWEEP.map(r=>{
+  const isPcf=r.sc==='pcf_timeout';
+  const typeTag=r.t==='infrastructure-wide'?`<span class="tag tr">${r.t}</span>`:r.t==='slice-isolated'?`<span class="tag ta">${r.t}</span>`:`<span class="tag tam">${r.t}</span>`;
+  return `<tr style="${isPcf?'background:rgba(0,200,255,.04)':''}">
+    <td style="font-family:var(--mono);font-size:10px;${isPcf?'color:var(--acc);font-weight:600':''}">${r.sc}${isPcf?' ★':''}</td>
+    <td style="font-family:var(--mono);font-size:10px">${r.nf.toUpperCase()}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--txt-m)">${r.aff}</td>
+    <td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:4px;background:var(--bdr);border-radius:2px;max-width:80px"><div style="height:100%;width:${r.b*100}%;background:${r.b<1?'var(--acc)':'var(--red)'};border-radius:2px"></div></div><span style="font-family:var(--mono);font-size:10px;color:${r.b<1?'var(--acc)':'var(--red)'}">${r.b.toFixed(4)}</span></div></td>
+    <td>${typeTag}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:${r.ens<1?'var(--acc)':'var(--txt-m)'}">${r.ens.toFixed(4)}</td>
+  </tr>`;
+}).join('');
+
+// ═══════════════════════════════════════════════════════
+// PIPELINE ANIMATION
+// ═══════════════════════════════════════════════════════
+function animatePipeline(){
+  for(let i=0;i<6;i++){
+    const s=document.getElementById('ps'+i);
+    const a=document.getElementById('pa'+i);
+    setTimeout(()=>{
+      s.classList.add('lit');
+      if(a) a.classList.add('lit');
+      setTimeout(()=>{s.classList.remove('lit');if(a)a.classList.remove('lit');},700);
+    },i*380);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RECAL LOOP ANIMATION
+// ═══════════════════════════════════════════════════════
+function animateRecalLoop(){
+  for(let i=0;i<5;i++){
+    const n=document.getElementById('ln'+i);
+    setTimeout(()=>{
+      n.classList.add('lit');
+      setTimeout(()=>n.classList.remove('lit'),700);
+    },i*500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// WEIGHT ANIMATION
+// ═══════════════════════════════════════════════════════
+function animateWeights(){
+  const targets=[35.1,35.1,35.1,35.1];
+  const vals=['0.351','0.351','0.351','0.351'];
+  for(let i=0;i<4;i++){
+    document.getElementById('wb'+i).style.width='0%';
+    document.getElementById('wv'+i).textContent='0.000';
+  }
+  setTimeout(()=>{
+    for(let i=0;i<4;i++){
+      document.getElementById('wb'+i).style.width=targets[i]+'%';
+      // animate value counter
+      let start=0,end=0.351,steps=60,step=0;
+      const timer=setInterval(()=>{
+        step++;
+        const v=(start+(end-start)*(step/steps)).toFixed(3);
+        document.getElementById('wv'+i).textContent=v;
+        if(step>=steps)clearInterval(timer);
+      },25);
+    }
+  },300);
+}
+
+// ═══════════════════════════════════════════════════════
+// HIGHLIGHT PRIOR ART GAPS
+// ═══════════════════════════════════════════════════════
+function highlightGaps(){
+  const cells=document.querySelectorAll('.prior-tbl td.crs');
+  cells.forEach((td,i)=>{
+    setTimeout(()=>{td.classList.add('gap-highlight');},i*60);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DEMO ENGINE
+// ═══════════════════════════════════════════════════════
+let demoActive=false,currentStep=0,spotlitEl=null;
+
+function startDemo(){
+  demoActive=true;currentStep=0;
+  document.getElementById('overlay').classList.add('on');
+  document.getElementById('narBar').classList.add('show');
+  document.getElementById('demoBanner').classList.add('show');
+  document.getElementById('keyHint').classList.add('show');
+  renderNarDots();
+  goToStep(0);
+}
+
+function exitDemo(){
+  demoActive=false;
+  document.getElementById('overlay').classList.remove('on');
+  document.getElementById('narBar').classList.remove('show');
+  document.getElementById('demoBanner').classList.remove('show');
+  document.getElementById('keyHint').classList.remove('show');
+  document.getElementById('lookPtr').classList.remove('show');
+  if(spotlitEl){spotlitEl.classList.remove('spotlit','spotlit-red');spotlitEl=null;}
+  // clear gap highlights
+  document.querySelectorAll('.gap-highlight').forEach(el=>el.classList.remove('gap-highlight'));
+}
+
+function nextStep(){
+  if(!demoActive)return;
+  if(currentStep<STEPS.length-1){currentStep++;goToStep(currentStep);}
+  else exitDemo();
+}
+
+function prevStep(){
+  if(!demoActive)return;
+  if(currentStep>0){currentStep--;goToStep(currentStep);}
+}
+
+function goToStep(i){
+  const step=STEPS[i];
+
+  // Update narration
+  document.getElementById('narStep').textContent=`${i+1} / ${STEPS.length}`;
+  document.getElementById('narTitle').textContent=step.title;
+  document.getElementById('narDesc').textContent=step.desc;
+  document.getElementById('bannerStep').textContent=i+1;
+  renderNarDots();
+
+  // Clear previous spotlight
+  if(spotlitEl){spotlitEl.classList.remove('spotlit','spotlit-red');spotlitEl=null;}
+  document.getElementById('lookPtr').classList.remove('show');
+
+  // Scroll to section
+  if(step.scroll){
+    const sec=document.getElementById(step.scroll);
+    if(sec) sec.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  // Spotlight target after scroll settles
+  if(step.target){
+    setTimeout(()=>{
+      const el=document.getElementById(step.target);
+      if(!el)return;
+      el.classList.add('spotlit');
+      spotlitEl=el;
+      el.scrollIntoView({behavior:'smooth',block:'center'});
+
+      // Position pointer
+      if(step.ptr){
+        setTimeout(()=>positionPtr(el,step.ptr),400);
+      }
+    },350);
+  }
+
+  // Run action
+  if(step.action){
+    setTimeout(()=>window[step.action]&&window[step.action](),step.target?900:200);
+  }
+}
+
+function positionPtr(el,ptr){
+  const rect=el.getBoundingClientRect();
+  const ptrEl=document.getElementById('lookPtr');
+  const ptrArrow=document.getElementById('ptrArrow');
+  const ptrText=document.getElementById('ptrText');
+  ptrText.textContent=ptr.text||'WATCH HERE';
+
+  let top,left;
+  if(ptr.dir==='above'){
+    ptrArrow.className='ptr-arrow-down';
+    ptrArrow.textContent='▼';
+    top=rect.top-70;
+    left=rect.left+rect.width/2-60;
+  }else if(ptr.dir==='below'){
+    ptrArrow.className='ptr-arrow-up';
+    ptrArrow.textContent='▲';
+    top=rect.bottom+10;
+    left=rect.left+rect.width/2-60;
+  }else if(ptr.dir==='right'){
+    ptrArrow.className='ptr-arrow-left';
+    ptrArrow.textContent='◀';
+    top=rect.top+rect.height/2-28;
+    left=rect.right+12;
+  }else{
+    ptrArrow.className='ptr-arrow-right';
+    ptrArrow.textContent='▶';
+    top=rect.top+rect.height/2-28;
+    left=rect.left-120;
+  }
+
+  // Clamp to viewport
+  top=Math.max(60,Math.min(window.innerHeight-100,top));
+  left=Math.max(8,Math.min(window.innerWidth-160,left));
+
+  ptrEl.style.top=top+'px';
+  ptrEl.style.left=left+'px';
+  ptrEl.classList.add('show');
+}
+
+function renderNarDots(){
+  document.getElementById('narDots').innerHTML=STEPS.map((s,i)=>`<div class="nar-dot${i<currentStep?' done':i===currentStep?' curr':''}"></div>`).join('');
+}
+
+// Keyboard navigation
+document.addEventListener('keydown',e=>{
+  if(!demoActive)return;
+  if(e.key==='ArrowRight'||e.key==='Enter')nextStep();
+  else if(e.key==='ArrowLeft')prevStep();
+  else if(e.key==='Escape')exitDemo();
+});
+
+// ═══════════════════════════════════════════════════════
+// LIVE API
+// ═══════════════════════════════════════════════════════
+let pollTimer=null,apiBase='http://localhost:8080';
+function connectApi(){apiBase=document.getElementById('apiUrl').value.replace(/\/$/,'');setStatus('','Connecting...');pollRca();if(!pollTimer)pollTimer=setInterval(pollRca,5000);}
+function disconnectApi(){if(pollTimer){clearInterval(pollTimer);pollTimer=null;}setStatus('','Not connected');document.getElementById('livePanel').classList.remove('vis');}
+function setStatus(cls,txt){document.getElementById('sdot').className='sdot'+(cls?' '+cls:'');const el=document.getElementById('stxt');el.textContent=txt;el.style.color=cls==='conn'?'var(--grn)':cls==='err'?'var(--red)':'var(--txt-m)';}
+function rJson(o,d=0){
+  if(o===null)return'<span style="color:var(--txt-d)">null</span>';
+  if(typeof o==='boolean'||typeof o==='number')return`<span class="vn">${o}</span>`;
+  if(typeof o==='string'){const c=o==='slice-isolated'?'vi':o==='infrastructure-wide'?'vr':o==='all-slice-nf'?'vi':'vs';return`<span class="${c}">"${o}"</span>`;}
+  if(Array.isArray(o)){if(!o.length)return'[]';return`[\n${o.map(v=>'  '.repeat(d+1)+rJson(v,d+1)).join(',\n')}\n${'  '.repeat(d)}]`;}
+  const es=Object.entries(o);if(!es.length)return'{}';
+  return`{\n${es.map(([k,v])=>`${'  '.repeat(d+1)}<span class="key">"${k}"</span>: ${rJson(v,d+1)}`).join(',\n')}\n${'  '.repeat(d)}}`;
+}
+async function pollRca(){
+  try{
+    const r=await fetch(`${apiBase}/rca`,{signal:AbortSignal.timeout(4000)});
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const data=await r.json();
+    setStatus('conn','Live');
+    document.getElementById('livePanel').classList.add('vis');
+    if(data.status==='collecting'){
+      document.getElementById('lnf').textContent='...';document.getElementById('lbreadth').textContent='—';
+      document.getElementById('lisoType').textContent=data.message||'Collecting...';
+      document.getElementById('lsc').textContent=`buffer ${Math.round(data.buffer_fill_pct||0)}%`;
+      document.getElementById('ljson').innerHTML=rJson(data);return;
+    }
+    const rep=data.report||{},rc=rep.root_cause||{},sa=rep.slice_attribution||null;
+    const nf=(rc.nf_id||'—').toUpperCase();
+    document.getElementById('lnf').textContent=nf;
+    document.getElementById('lnf').className='rca-live'+(rep.severity==='CRITICAL'?' crit':'');
+    const sev=rep.severity||'—';
+    const sevEl=document.getElementById('lsev');sevEl.textContent=sev;sevEl.className=`tag ${sev==='CRITICAL'?'tr':'tam'}`;
+    document.getElementById('lsc').textContent=`score ${(rc.composite_score||0).toFixed(4)}`;
+    if(sa){
+      const b=document.getElementById('lbreadth');b.textContent=sa.slice_breadth.toFixed(4);
+      const iso=sa.isolation_type==='slice-isolated';b.style.color=iso?'var(--acc)':'var(--red)';
+      document.getElementById('lisoType').innerHTML=`<span class="tag ${iso?'ta':'tr'}">${sa.isolation_type}</span>`;
+      document.getElementById('lsliceAff').textContent=`${sa.n_slices_affected} / ${sa.n_slices_total} slices affected`;
+    }else{document.getElementById('lbreadth').textContent='—';document.getElementById('lisoType').textContent='No slice attribution yet';}
+    document.getElementById('ljson').innerHTML=rJson({root_cause:{nf_id:rc.nf_id,composite_score:rc.composite_score},severity:rep.severity,slice_attribution:sa?{slice_breadth:sa.slice_breadth,isolation_type:sa.isolation_type,ensemble_score:sa.ensemble_score}:null,recalibration_snapshot:rep.recalibration_snapshot?{cycle_count:rep.recalibration_snapshot.cycle_count,edges_tracked:rep.recalibration_snapshot.edges_tracked,reinforced_edges:rep.recalibration_snapshot.reinforced_edges}:null,active_injections:data.active_injections});
+  }catch(e){setStatus('err',e.message.includes('aborted')?'Timeout':'Unreachable');}
+}
+async function inject(sc,btn){
+  document.querySelectorAll('.inj-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  try{const r=await fetch(`${apiBase}/faults/inject/${sc}`,{method:'POST'});if(!r.ok){const e=await r.json();alert(e.detail||'Injection failed');btn.classList.remove('active');}}
+  catch(e){alert('API not reachable — start the server first');btn.classList.remove('active');}
+}
+async function recoverAll(){
+  document.querySelectorAll('.inj-btn').forEach(b=>b.classList.remove('active'));
+  for(const s of['nrf_crash','amf_crash','smf_crash','pcf_timeout','udm_crash'])
+    try{await fetch(`${apiBase}/faults/recover/${s}`,{method:'POST'});}catch(e){}
+}
+</script>
+</body>
+</html>
