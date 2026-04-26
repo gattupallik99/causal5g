@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Causal5G — Patent Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090f;
+  --surface: #0d1117;
+  --surface2: #131920;
+  --border: #1e2d3d;
+  --border2: #253545;
+  --accent: #00c8ff;
+  --accent-dim: rgba(0,200,255,0.12);
+  --red: #ff4466;
+  --red-dim: rgba(255,68,102,0.12);
+  --green: #00e676;
+  --green-dim: rgba(0,230,118,0.1);
+  --amber: #ffb300;
+  --amber-dim: rgba(255,179,0,0.12);
+  --purple: #b388ff;
+  --purple-dim: rgba(179,136,255,0.12);
+  --text: #cdd9e5;
+  --text-muted: #5c7080;
+  --text-dim: #3a4a5a;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
+  --r: 6px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ── Scrollable sections ── */
+.section {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.section.wide { max-width: 1400px; }
+
+/* ── Nav ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: rgba(7,9,15,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 52px;
+}
+.nav-logo { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: 2px; }
+.nav-logo span { color: var(--red); }
+.nav-links { display: flex; gap: 28px; }
+.nav-links a { font-size: 12px; color: var(--text-muted); text-decoration: none; letter-spacing: 0.5px; transition: color .2s; }
+.nav-links a:hover { color: var(--text); }
+.patent-badge {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+  padding: 3px 10px; border-radius: 3px;
+  border: 1px solid var(--amber); color: var(--amber);
+  background: var(--amber-dim);
+}
+
+/* ── Typography ── */
+.eyebrow {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
+}
+.eyebrow.accent { color: var(--accent); }
+.eyebrow.red { color: var(--red); }
+h1 { font-size: clamp(32px, 4vw, 52px); font-weight: 700; line-height: 1.15; margin-bottom: 20px; }
+h2 { font-size: clamp(22px, 3vw, 34px); font-weight: 600; line-height: 1.25; margin-bottom: 16px; }
+h3 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.lead { font-size: 17px; color: var(--text-muted); line-height: 1.7; max-width: 660px; }
+.highlight { color: var(--accent); }
+.highlight-red { color: var(--red); }
+.highlight-amber { color: var(--amber); }
+.highlight-green { color: var(--green); }
+
+/* ── Cards / Panels ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.card-accent::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, var(--accent), transparent); }
+.card-red::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, var(--red), transparent); }
+.card-green::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, var(--green), transparent); }
+.card-amber::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, var(--amber), transparent); }
+.card-purple::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, var(--purple), transparent); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+/* ── Tags/badges ── */
+.tag {
+  display: inline-block; font-family: var(--mono); font-size: 10px;
+  padding: 2px 8px; border-radius: 3px; letter-spacing: 1px;
+}
+.tag-red { background: var(--red-dim); color: var(--red); border: 1px solid rgba(255,68,102,0.3); }
+.tag-green { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+.tag-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,179,0,0.3); }
+.tag-accent { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(0,200,255,0.3); }
+.tag-purple { background: var(--purple-dim); color: var(--purple); border: 1px solid rgba(179,136,255,0.3); }
+
+/* ── Mono text ── */
+.mono { font-family: var(--mono); }
+.mono-sm { font-family: var(--mono); font-size: 11px; }
+.mono-xs { font-family: var(--mono); font-size: 10px; }
+
+/* ── Divider ── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 1: HERO
+   ──────────────────────────────────────────────────────────── */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 100px 60px 60px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.hero-sub { margin-top: 28px; }
+.hero-claims { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 2: PROBLEM — alarm storm
+   ──────────────────────────────────────────────────────────── */
+.alarm-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 24px;
+}
+.alarm-card {
+  border-radius: var(--r);
+  padding: 16px;
+  text-align: center;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: all .3s;
+  position: relative;
+}
+.alarm-card.firing {
+  border-color: var(--red);
+  background: var(--red-dim);
+  animation: alarmPulse 1.2s infinite;
+}
+.alarm-card.ok {
+  border-color: rgba(0,230,118,0.3);
+  background: var(--green-dim);
+}
+@keyframes alarmPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(255,68,102,0); }
+  50% { box-shadow: 0 0 0 6px rgba(255,68,102,0.15); }
+}
+.alarm-nf { font-family: var(--mono); font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.alarm-status { font-size: 11px; }
+.alarm-annotation {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 16px;
+}
+.alarm-annotation strong { color: var(--red); }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 3: HOW IT WORKS — pipeline
+   ──────────────────────────────────────────────────────────── */
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 32px 0;
+  overflow-x: auto;
+}
+.pipe-stage {
+  flex: 1;
+  min-width: 120px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px 12px;
+  text-align: center;
+  position: relative;
+}
+.pipe-stage-name { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+.pipe-stage-desc { font-size: 10px; color: var(--text-muted); line-height: 1.4; }
+.pipe-arrow {
+  width: 28px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim); font-size: 18px;
+}
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 4: LEVEL-1 NF ATTRIBUTION
+   ──────────────────────────────────────────────────────────── */
+.scenario-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.scenario-tab {
+  font-family: var(--mono); font-size: 11px; padding: 6px 14px;
+  border-radius: 4px; cursor: pointer; border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted);
+  transition: all .2s;
+}
+.scenario-tab:hover { border-color: var(--border2); color: var(--text); }
+.scenario-tab.active {
+  border-color: var(--accent); color: var(--accent);
+  background: var(--accent-dim);
+}
+.candidate-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px; font-family: var(--mono); font-size: 12px;
+}
+.cand-rank { width: 18px; color: var(--text-dim); font-size: 10px; text-align: right; }
+.cand-nf { width: 38px; color: var(--text); font-size: 11px; }
+.cand-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.cand-bar { height: 100%; border-radius: 2px; transition: width .8s cubic-bezier(.4,0,.2,1); }
+.cand-score { width: 44px; text-align: right; font-size: 10px; color: var(--text-muted); }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 5: THE KEY PROOF — slice attribution
+   ──────────────────────────────────────────────────────────── */
+.slice-compare {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px;
+}
+.slice-scenario { border-radius: var(--r); overflow: hidden; }
+.slice-header {
+  padding: 14px 18px; font-family: var(--mono); font-size: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.slice-header.infra { background: rgba(255,68,102,0.1); border: 1px solid rgba(255,68,102,0.3); border-bottom: none; }
+.slice-header.isolated { background: rgba(0,200,255,0.08); border: 1px solid rgba(0,200,255,0.3); border-bottom: none; }
+.slice-body { background: var(--surface); padding: 16px; border: 1px solid var(--border); border-top: none; }
+.slice-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.slice-row:last-child { border-bottom: none; }
+.slice-name { width: 56px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.slice-nfs { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.nf-chip {
+  font-family: var(--mono); font-size: 10px; padding: 3px 8px;
+  border-radius: 3px; border: 1px solid;
+}
+.nf-chip.normal { background: var(--surface2); border-color: var(--border2); color: var(--text-muted); }
+.nf-chip.faulted { background: rgba(255,68,102,0.15); border-color: var(--red); color: var(--red); }
+.nf-chip.absent { background: transparent; border-color: var(--text-dim); color: var(--text-dim); border-style: dashed; }
+.slice-impact { width: 70px; text-align: right; font-size: 11px; }
+
+.breadth-meter {
+  margin-top: 20px; padding: 16px; background: var(--surface2);
+  border: 1px solid var(--border2); border-radius: var(--r);
+  display: flex; align-items: center; gap: 16px;
+}
+.breadth-label { font-family: var(--mono); font-size: 10px; color: var(--text-muted); width: 100px; }
+.breadth-bar-bg { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.breadth-bar { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.breadth-value { font-family: var(--mono); font-size: 13px; font-weight: 600; width: 50px; text-align: right; }
+.isolation-label { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; }
+
+/* The "so what" callout */
+.sowhat {
+  margin-top: 24px; padding: 20px 24px;
+  border-radius: var(--r); border-left: 3px solid;
+  background: var(--surface2);
+}
+.sowhat.infra { border-color: var(--red); }
+.sowhat.isolated { border-color: var(--accent); }
+.sowhat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.sowhat-text { font-size: 13px; line-height: 1.6; }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 6: CLAIM 4 — Recalibration
+   ──────────────────────────────────────────────────────────── */
+.recal-loop {
+  display: flex; align-items: center; gap: 0;
+  margin: 28px 0; flex-wrap: wrap; justify-content: center;
+}
+.loop-node {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px 18px;
+  text-align: center; min-width: 130px;
+}
+.loop-node-name { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-bottom: 3px; }
+.loop-node-desc { font-size: 10px; color: var(--text-muted); }
+.loop-arrow { padding: 0 6px; color: var(--text-dim); font-size: 16px; }
+.loop-arrow.down { transform: rotate(90deg); }
+
+.weight-demo {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;
+}
+.weight-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+  font-family: var(--mono); font-size: 11px;
+}
+.weight-edge { width: 80px; color: var(--text-muted); font-size: 10px; }
+.weight-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; position: relative; overflow: visible; }
+.weight-bar { height: 100%; border-radius: 3px; position: relative; }
+.weight-neutral-mark {
+  position: absolute; top: -3px; bottom: -3px; width: 2px;
+  background: var(--text-dim); left: 33.3%; /* 1.0 / 3.0 max */
+}
+.weight-val { width: 38px; text-align: right; font-size: 10px; }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 7: WHAT'S NOVEL — prior art
+   ──────────────────────────────────────────────────────────── */
+.prior-art-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 20px; }
+.prior-art-table th {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--text-muted);
+  padding: 10px 14px; text-align: left;
+  border-bottom: 1px solid var(--border); background: var(--surface2);
+}
+.prior-art-table td {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  vertical-align: top; color: var(--text);
+}
+.prior-art-table tr:last-child td { border-bottom: none; }
+.prior-art-table tr.us { background: rgba(0,200,255,0.04); }
+.prior-art-table tr.us td:first-child { color: var(--accent); font-weight: 600; }
+.check { color: var(--green); }
+.cross { color: var(--red); }
+.partial { color: var(--amber); }
+
+/* ────────────────────────────────────────────────────────────
+   SECTION 8: LIVE API
+   ──────────────────────────────────────────────────────────── */
+.api-connect {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+}
+.api-url-input {
+  flex: 1; background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-family: var(--mono); font-size: 12px;
+  padding: 8px 12px; border-radius: 4px; outline: none;
+  transition: border-color .2s;
+}
+.api-url-input:focus { border-color: var(--accent); }
+.btn {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 1px;
+  padding: 8px 18px; border-radius: 4px; cursor: pointer;
+  border: 1px solid; transition: all .2s;
+}
+.btn-primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.btn-primary:hover { background: rgba(0,200,255,0.2); }
+.btn-danger { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(255,68,102,0.2); }
+.btn-ghost { background: transparent; border-color: var(--border2); color: var(--text-muted); }
+.btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+.live-status {
+  display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px;
+}
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-dim);
+}
+.status-dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); animation: dotPulse 2s infinite; }
+.status-dot.error { background: var(--red); }
+@keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+.live-rca { display: none; }
+.live-rca.visible { display: block; }
+
+.rca-big-nf {
+  font-family: var(--mono); font-size: 56px; font-weight: 700;
+  color: var(--accent); line-height: 1; margin-bottom: 4px;
+  transition: color .5s;
+}
+.rca-big-nf.critical { color: var(--red); }
+
+.fault-inject-grid { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+.inject-btn {
+  font-family: var(--mono); font-size: 11px; padding: 7px 14px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text-muted); border-radius: 4px; cursor: pointer;
+  transition: all .2s;
+}
+.inject-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+.inject-btn.active { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+
+.live-json {
+  margin-top: 16px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 14px 16px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+  max-height: 220px; overflow-y: auto; line-height: 1.6;
+}
+.live-json .key { color: var(--accent); }
+.live-json .val-str { color: var(--amber); }
+.live-json .val-num { color: var(--green); }
+.live-json .val-null { color: var(--text-dim); }
+.live-json .val-isolated { color: var(--accent); font-weight: 600; }
+.live-json .val-infra { color: var(--red); font-weight: 600; }
+
+/* ── Scroll hint ── */
+.scroll-hint {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  animation: float 2.5s ease-in-out infinite;
+}
+@keyframes float { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-6px)} }
+.scroll-hint-text { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; }
+.scroll-hint-arrow { color: var(--text-dim); font-size: 16px; }
+
+/* ── Misc ── */
+.stat-big { font-family: var(--mono); font-size: 36px; font-weight: 700; line-height: 1; }
+.label-sm { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.mt8 { margin-top: 8px; }
+.mt16 { margin-top: 16px; }
+.mt24 { margin-top: 24px; }
+.mt32 { margin-top: 32px; }
+.mb8 { margin-bottom: 8px; }
+.mb16 { margin-bottom: 16px; }
+.gap-8 { display: flex; gap: 8px; align-items: center; }
+.flex { display: flex; align-items: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.col { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="nav-logo">CAUSAL<span>5G</span></div>
+  <div class="nav-links">
+    <a href="#problem">Problem</a>
+    <a href="#solution">How It Works</a>
+    <a href="#level1">NF Attribution</a>
+    <a href="#proof">The Proof</a>
+    <a href="#claim4">Recalibration</a>
+    <a href="#novel">What's Novel</a>
+    <a href="#live">Live Demo</a>
+  </div>
+  <div class="patent-badge">PATENT PENDING</div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 1: HERO
+     ═══════════════════════════════════════════════════════════ -->
+<div style="position:relative; min-height:100vh; display:flex; align-items:center; background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,200,255,0.06) 0%, transparent 60%);">
+<section id="hero" class="section">
+  <div class="eyebrow accent">US Provisional Patent — March 2026</div>
+  <h1>
+    When your 5G network<br>
+    breaks, who broke it?
+  </h1>
+  <p class="lead">
+    Current monitoring fires <span class="highlight-red">6 alarms simultaneously</span>.
+    Causal5G tells you the <span class="highlight">exact NF</span>, which slices are affected,
+    and automatically remediates — all within 30 seconds.
+  </p>
+
+  <div class="hero-claims mt32">
+    <span class="tag tag-accent">Claim 1 · Bi-level Causal DAG</span>
+    <span class="tag tag-red">Claim 2 · Four-Domain Hierarchy</span>
+    <span class="tag tag-amber">Claim 3 · Confidence-Gated Remediation</span>
+    <span class="tag tag-purple">Claim 4 · Feedback Recalibration</span>
+  </div>
+
+  <div class="grid4 mt32" style="max-width:700px">
+    <div class="card card-accent">
+      <div class="stat-big highlight">100%</div>
+      <div class="label-sm">Detection rate<br>5 fault scenarios</div>
+    </div>
+    <div class="card card-red">
+      <div class="stat-big" style="color:var(--red)">~30s</div>
+      <div class="label-sm">Root cause<br>identification</div>
+    </div>
+    <div class="card card-green">
+      <div class="stat-big highlight-green">453</div>
+      <div class="label-sm">Tests passing<br>Days 1–20</div>
+    </div>
+    <div class="card card-amber">
+      <div class="stat-big highlight-amber">4</div>
+      <div class="label-sm">Patent claims<br>all live in API</div>
+    </div>
+  </div>
+</section>
+<div class="scroll-hint" style="position:fixed; bottom:24px; left:50%;">
+  <div class="scroll-hint-text">SCROLL</div>
+  <div class="scroll-hint-arrow">↓</div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 2: THE PROBLEM
+     ═══════════════════════════════════════════════════════════ -->
+<section id="problem" class="section">
+  <div class="eyebrow red">The Problem</div>
+  <h2>Current tools show <span class="highlight-red">symptoms</span>, not causes</h2>
+  <p class="lead">
+    PCF times out in your 5G core. Within seconds, your monitoring system fires
+    alarms on 6 different Network Functions simultaneously. You have no idea where to start.
+  </p>
+
+  <div style="margin-top:32px">
+    <div class="eyebrow" style="margin-bottom:8px">What your NOC sees — PCF timeout at T+5s</div>
+    <div class="alarm-grid" id="alarmGrid">
+      <div class="alarm-card" id="alarm-nrf">
+        <div class="alarm-nf">NRF</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-amf">
+        <div class="alarm-nf">AMF</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-smf">
+        <div class="alarm-nf">SMF</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-pcf">
+        <div class="alarm-nf">PCF</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-udm">
+        <div class="alarm-nf">UDM</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-udr">
+        <div class="alarm-nf">UDR</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-ausf">
+        <div class="alarm-nf">AUSF</div>
+        <div class="alarm-status">...</div>
+      </div>
+      <div class="alarm-card" id="alarm-nssf">
+        <div class="alarm-nf">NSSF</div>
+        <div class="alarm-status">...</div>
+      </div>
+    </div>
+
+    <div class="alarm-annotation">
+      <strong>Current tooling verdict:</strong> "6 NFs alarming simultaneously. Latency elevated across AMF, SMF, PCF, UDM, AUSF, NSSF."
+      Your operator is now guessing. Who do you call first?
+    </div>
+
+    <div class="grid2 mt24">
+      <div class="card card-red">
+        <h3 style="color:var(--red)">Threshold-based alerting</h3>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.7">
+          Every NF that crosses a KPI threshold fires simultaneously.
+          In a cascade, that's every downstream NF of the faulted one —
+          6 alarms for a single root cause. Alert storms obscure signal.
+        </p>
+      </div>
+      <div class="card card-red">
+        <h3 style="color:var(--red)">Correlation-based grouping</h3>
+        <p style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.7">
+          AIOps platforms group co-occurring alarms by time proximity.
+          They can tell you "AMF and PCF alarmed together."
+          They cannot tell you which caused the other — or that mIoT is fine.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 3: HOW IT WORKS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="solution" class="section">
+  <div class="eyebrow accent">How Causal5G Works</div>
+  <h2>Five-stage causal inference pipeline</h2>
+  <p class="lead">
+    Granger causality + PC algorithm + Bayesian inference, fused across
+    four telemetry streams, producing a bi-level causal DAG updated every 30 seconds.
+  </p>
+
+  <div class="pipeline mt32">
+    <div class="pipe-stage" style="border-color:rgba(0,200,255,0.4)">
+      <div class="pipe-stage-name">MTIE</div>
+      <div class="pipe-stage-desc">Multi-modal telemetry ingestion<br>SBI · PFCP · Prometheus · Logs<br><span style="color:var(--accent)">1,752 events/min</span></div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage">
+      <div class="pipe-stage-name">CIE</div>
+      <div class="pipe-stage-desc">Causal inference<br>Granger causality<br>PC algorithm</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage">
+      <div class="pipe-stage-name">DCGM</div>
+      <div class="pipe-stage-desc">Dynamic causal graph<br>3GPP priors + live edges<br>8 NFs, weighted</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage" style="border-color:rgba(0,200,255,0.4)">
+      <div class="pipe-stage-name">RCSM</div>
+      <div class="pipe-stage-desc">Root cause scoring<br>Centrality 40%<br>Temporal 30%<br>Bayesian 30%</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage" style="border-color:rgba(0,200,255,0.4)">
+      <div class="pipe-stage-name">Level-2</div>
+      <div class="pipe-stage-desc">Slice sub-DAG<br>SliceEnsemble<br>Attributor<br><span style="color:var(--accent)">New in patent</span></div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-stage" style="border-color:rgba(0,230,118,0.4)">
+      <div class="pipe-stage-name">FRG + RAE</div>
+      <div class="pipe-stage-desc">Fault report<br>Remediation<br>Recalibration</div>
+    </div>
+  </div>
+
+  <div class="grid3 mt8">
+    <div class="card card-accent">
+      <div class="eyebrow accent" style="margin-bottom:6px">Claim 1 · Bi-level DAG</div>
+      <p style="font-size:12px; color:var(--text-muted); line-height:1.6">
+        Level-1: NF-layer attribution via composite RCSM score.
+        Level-2: slice sub-DAG attribution via SliceTopologyManager pruning.
+        Two levels fused into a single <code style="font-size:10px; color:var(--accent)">FaultReport</code>.
+      </p>
+    </div>
+    <div class="card card-red">
+      <div class="eyebrow red" style="margin-bottom:6px">Claim 2 · Four-Domain</div>
+      <p style="font-size:12px; color:var(--text-muted); line-height:1.6">
+        Hierarchical DAG spanning RAN → Transport → Core → Cloud.
+        Cross-domain edges for O-RAN integration. 3GPP TS 32.111-compliant RCA reports.
+      </p>
+    </div>
+    <div class="card card-amber">
+      <div class="eyebrow" style="margin-bottom:6px; color:var(--amber)">Claims 3 + 4</div>
+      <p style="font-size:12px; color:var(--text-muted); line-height:1.6">
+        Confidence-gated closed-loop remediation (threshold 0.65).
+        Feedback-driven DAG recalibration: remediation outcome signals
+        update causal edge weights for the next fault.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 4: LEVEL-1 NF ATTRIBUTION
+     ═══════════════════════════════════════════════════════════ -->
+<section id="level1" class="section">
+  <div class="eyebrow accent">Claim 1 · Level-1 Attribution</div>
+  <h2>Correct NF root cause across all 5 scenarios</h2>
+  <p class="lead">
+    The composite RCSM score combines graph centrality, temporal precedence,
+    and Bayesian posterior. Docker container-status is the primary signal.
+    5/5 injected faults correctly identified.
+  </p>
+
+  <div class="scenario-tabs mt32" id="scenarioTabs"></div>
+
+  <div class="grid2" style="margin-top:12px">
+    <div class="card card-accent" id="l1ResultCard">
+      <div class="eyebrow" style="margin-bottom:4px">Root Cause</div>
+      <div class="rca-big-nf" id="l1RcNf">PCF</div>
+      <div class="gap-8 mt8">
+        <span class="tag tag-red" id="l1Severity">CRITICAL</span>
+        <span style="font-family:var(--mono); font-size:11px; color:var(--text-muted)" id="l1Score">score 1.0100</span>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-top:12px; line-height:1.6" id="l1Category">
+        Processing Error - Policy Control Failure
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:11px; color:var(--text-muted); margin-bottom:6px">Evidence</div>
+        <ul id="l1Evidence" style="list-style:none; font-size:11px; color:var(--text-muted); line-height:2">
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" id="l1CandCard">
+      <div class="eyebrow" style="margin-bottom:14px">All Candidates — ranked by composite score</div>
+      <div id="l1Candidates"></div>
+      <hr class="divider" style="margin:16px 0">
+      <div class="eyebrow" style="margin-bottom:8px">Score formula</div>
+      <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted); line-height:2">
+        <span style="color:var(--accent)">0.4</span> × centrality<br>
+        <span style="color:var(--accent)">0.3</span> × temporal precedence<br>
+        <span style="color:var(--accent)">0.3</span> × Bayesian posterior
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 5: THE KEY PROOF — slice attribution
+     ═══════════════════════════════════════════════════════════ -->
+<section id="proof" class="section wide">
+  <div class="eyebrow accent">Claim 1 · Level-2 · The Patent's Canonical Proof</div>
+  <h2>What no current system can tell you</h2>
+  <p class="lead">
+    When PCF times out, <em>only eMBB and URLLC slices are affected</em>.
+    mIoT traffic runs fine — it has no PCF in its NF set.
+    Current monitoring tools cannot make this distinction.
+    Causal5G's bi-level DAG can.
+  </p>
+
+  <div class="slice-compare">
+    <!-- NRF crash — infrastructure-wide -->
+    <div class="slice-scenario">
+      <div class="slice-header infra">
+        <span>Scenario: <strong style="color:var(--red)">NRF crash</strong></span>
+        <span class="tag tag-red">infrastructure-wide</span>
+      </div>
+      <div class="slice-body">
+        <div class="slice-row">
+          <div class="slice-name">eMBB</div>
+          <div class="slice-nfs">
+            <span class="nf-chip faulted">NRF</span>
+            <span class="nf-chip normal">AMF</span>
+            <span class="nf-chip normal">SMF</span>
+            <span class="nf-chip normal">PCF</span>
+            <span class="nf-chip normal">UDM</span>
+          </div>
+          <div class="slice-impact"><span class="tag tag-red">DOWN</span></div>
+        </div>
+        <div class="slice-row">
+          <div class="slice-name">URLLC</div>
+          <div class="slice-nfs">
+            <span class="nf-chip faulted">NRF</span>
+            <span class="nf-chip normal">AMF</span>
+            <span class="nf-chip normal">SMF</span>
+            <span class="nf-chip normal">PCF</span>
+            <span class="nf-chip normal">UDM</span>
+          </div>
+          <div class="slice-impact"><span class="tag tag-red">DOWN</span></div>
+        </div>
+        <div class="slice-row">
+          <div class="slice-name">mIoT</div>
+          <div class="slice-nfs">
+            <span class="nf-chip faulted">NRF</span>
+            <span class="nf-chip normal">AMF</span>
+            <span class="nf-chip normal">SMF</span>
+            <span class="nf-chip normal">UDM</span>
+          </div>
+          <div class="slice-impact"><span class="tag tag-red">DOWN</span></div>
+        </div>
+
+        <div class="breadth-meter">
+          <div class="breadth-label">Slice breadth</div>
+          <div class="breadth-bar-bg">
+            <div class="breadth-bar" style="width:100%; background:var(--red)"></div>
+          </div>
+          <div class="breadth-value" style="color:var(--red)">1.000</div>
+          <span class="isolation-label tag tag-red">infra-wide</span>
+        </div>
+      </div>
+      <div class="sowhat infra mt16">
+        <div class="sowhat-label" style="color:var(--red)">Operator action</div>
+        <div class="sowhat-text">
+          <strong style="color:var(--red)">All-hands emergency.</strong> NRF is shared infrastructure —
+          every slice, every UE is affected. Page every operations team.
+          Restart NRF immediately. breadth = 1.0 confirms full outage.
+        </div>
+      </div>
+    </div>
+
+    <!-- PCF timeout — slice-isolated -->
+    <div class="slice-scenario">
+      <div class="slice-header isolated">
+        <span>Scenario: <strong style="color:var(--accent)">PCF timeout</strong></span>
+        <span class="tag tag-accent">slice-isolated</span>
+      </div>
+      <div class="slice-body">
+        <div class="slice-row">
+          <div class="slice-name">eMBB</div>
+          <div class="slice-nfs">
+            <span class="nf-chip faulted" style="border-color:var(--accent); color:var(--accent); background:var(--accent-dim)">PCF</span>
+            <span class="nf-chip normal">AMF</span>
+            <span class="nf-chip normal">SMF</span>
+            <span class="nf-chip normal">UDM</span>
+          </div>
+          <div class="slice-impact"><span class="tag tag-red">DOWN</span></div>
+        </div>
+        <div class="slice-row">
+          <div class="slice-name">URLLC</div>
+          <div class="slice-nfs">
+            <span class="nf-chip faulted" style="border-color:var(--accent); color:var(--accent); background:var(--accent-dim)">PCF</span>
+            <span class="nf-chip normal">AMF</span>
+            <span class="nf-chip normal">SMF</span>
+            <span class="nf-chip normal">UDM</span>
+          </div>
+          <div class="slice-impact"><span class="tag tag-red">DOWN</span></div>
+        </div>
+        <div class="slice-row">
+          <div class="slice-name">mIoT</div>
+          <div class="slice-nfs">
+            <span class="nf-chip absent">PCF ✗</span>
+            <span class="nf-chip normal">AMF</span>
+            <span class="nf-chip normal">SMF</span>
+            <span class="nf-chip normal">UDM</span>
+          </div>
+          <div class="slice-impact"><span class="tag tag-green">OK</span></div>
+        </div>
+
+        <div class="breadth-meter">
+          <div class="breadth-label">Slice breadth</div>
+          <div class="breadth-bar-bg">
+            <div class="breadth-bar" style="width:66.7%; background:var(--accent)"></div>
+          </div>
+          <div class="breadth-value" style="color:var(--accent)">0.667</div>
+          <span class="isolation-label tag tag-accent">slice-isolated</span>
+        </div>
+      </div>
+      <div class="sowhat isolated mt16">
+        <div class="sowhat-label" style="color:var(--accent)">Operator action</div>
+        <div class="sowhat-text">
+          <strong style="color:var(--accent)">Targeted fix.</strong> PCF is absent from mIoT —
+          mIoT traffic is completely unaffected. Page the PCF team only.
+          Do not touch mIoT operations. breadth = 0.667 proves this is
+          a slice-specific issue, not infrastructure-wide.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The key numbers side by side -->
+  <div class="card mt32" style="background:var(--surface2)">
+    <div class="eyebrow mb16">Level-2 sweep — all 5 fault scenarios (offline, topology-based)</div>
+    <div style="overflow-x:auto">
+      <table style="width:100%; border-collapse:collapse; font-size:12px">
+        <thead>
+          <tr>
+            <th style="font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 12px; text-align:left; color:var(--text-muted); border-bottom:1px solid var(--border)">Scenario</th>
+            <th style="font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 12px; text-align:left; color:var(--text-muted); border-bottom:1px solid var(--border)">NF</th>
+            <th style="font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 12px; text-align:left; color:var(--text-muted); border-bottom:1px solid var(--border)">Slices Affected</th>
+            <th style="font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 12px; text-align:left; color:var(--text-muted); border-bottom:1px solid var(--border)">Breadth</th>
+            <th style="font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 12px; text-align:left; color:var(--text-muted); border-bottom:1px solid var(--border)">Isolation Type</th>
+            <th style="font-family:var(--mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 12px; text-align:left; color:var(--text-muted); border-bottom:1px solid var(--border)">Ensemble Score</th>
+          </tr>
+        </thead>
+        <tbody id="sweepTable"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 6: CLAIM 4 — Recalibration
+     ═══════════════════════════════════════════════════════════ -->
+<section id="claim4" class="section">
+  <div class="eyebrow" style="color:var(--purple)">Claim 4 · Feedback-Driven DAG Recalibration</div>
+  <h2>The system <span style="color:var(--purple)">learns</span> from every remediation</h2>
+  <p class="lead">
+    When remediation succeeds, causal edge weights are reinforced.
+    When it fails, they are penalised. The next fault diagnosis uses the updated DAG.
+    No existing 5G RCA system does this.
+  </p>
+
+  <div class="recal-loop mt32">
+    <div class="loop-node">
+      <div class="loop-node-name">FAULT DETECTED</div>
+      <div class="loop-node-desc">RCSM scores PCF<br>score=1.01</div>
+    </div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-node">
+      <div class="loop-node-name">RAE REMEDIATES</div>
+      <div class="loop-node-desc">rollback_config<br>on PCF (Claim 3)</div>
+    </div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-node">
+      <div class="loop-node-name">VERIFIER</div>
+      <div class="loop-node-desc">post-score &lt; 0.30?<br>→ CLEARED ✓</div>
+    </div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-node" style="border-color:rgba(179,136,255,0.5)">
+      <div class="loop-node-name" style="color:var(--purple)">RECALIBRATOR</div>
+      <div class="loop-node-desc">outcome=1.0<br>reinforce PCF edges</div>
+    </div>
+    <div class="loop-arrow">→</div>
+    <div class="loop-node" style="border-color:rgba(179,136,255,0.5)">
+      <div class="loop-node-name" style="color:var(--purple)">DCGM UPDATED</div>
+      <div class="loop-node-desc">pcf→smf weight<br>0.210 → 0.267</div>
+    </div>
+    <div class="loop-arrow" style="color:var(--purple)">↻</div>
+  </div>
+
+  <div class="grid2 mt8">
+    <div class="card card-purple">
+      <div class="eyebrow mb16" style="color:var(--purple)">Edge weight shift — 3× successful NRF remediation</div>
+      <div id="weightDemo">
+        <div class="weight-row">
+          <span class="weight-edge">nrf→amf</span>
+          <div class="weight-bar-bg" style="position:relative">
+            <div class="weight-neutral-mark"></div>
+            <div class="weight-bar" style="width:35.1%; background:var(--green)"></div>
+          </div>
+          <span class="weight-val" style="color:var(--green)">0.351</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-edge">nrf→smf</span>
+          <div class="weight-bar-bg" style="position:relative">
+            <div class="weight-neutral-mark"></div>
+            <div class="weight-bar" style="width:35.1%; background:var(--green)"></div>
+          </div>
+          <span class="weight-val" style="color:var(--green)">0.351</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-edge">nrf→pcf</span>
+          <div class="weight-bar-bg" style="position:relative">
+            <div class="weight-neutral-mark"></div>
+            <div class="weight-bar" style="width:35.1%; background:var(--green)"></div>
+          </div>
+          <span class="weight-val" style="color:var(--green)">0.351</span>
+        </div>
+        <div class="weight-row">
+          <span class="weight-edge">nrf→udm</span>
+          <div class="weight-bar-bg" style="position:relative">
+            <div class="weight-neutral-mark"></div>
+            <div class="weight-bar" style="width:35.1%; background:var(--green)"></div>
+          </div>
+          <span class="weight-val" style="color:var(--green)">0.351</span>
+        </div>
+        <div style="margin-top:12px; font-size:11px; color:var(--text-muted)">
+          <span style="color:var(--text-dim)">─</span> neutral (1.0 × prior)
+          <span style="margin-left:16px; color:var(--green)">■</span> reinforced after 3× success
+          <span style="margin-left:8px; font-family:var(--mono); color:var(--green)">+30% weight</span>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="eyebrow mb16">Recalibration state in every FaultReport</div>
+      <div class="live-json" style="max-height:280px">
+        <span class="key">"recalibration_snapshot"</span>: {<br>
+        &nbsp;&nbsp;<span class="key">"cycle_count"</span>: <span class="val-num">3</span>,<br>
+        &nbsp;&nbsp;<span class="key">"total_entries_consumed"</span>: <span class="val-num">3</span>,<br>
+        &nbsp;&nbsp;<span class="key">"edges_tracked"</span>: <span class="val-num">6</span>,<br>
+        &nbsp;&nbsp;<span class="key">"reinforced_edges"</span>: <span class="val-num">4</span>,<br>
+        &nbsp;&nbsp;<span class="key">"penalised_edges"</span>: <span class="val-num">0</span>,<br>
+        &nbsp;&nbsp;<span class="key">"edge_weights"</span>: {<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→amf"</span>: <span class="val-num">1.2595</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→smf"</span>: <span class="val-num">1.2595</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→pcf"</span>: <span class="val-num">1.2595</span>,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="key">"nrf→udm"</span>: <span class="val-num">1.2595</span><br>
+        &nbsp;&nbsp;}<br>
+        }
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:12px; line-height:1.7">
+        The recalibration snapshot is embedded in every <code style="font-size:10px; color:var(--accent)">GET /rca</code> response.
+        Patent counsel can read both the bi-level attribution and the
+        recalibration cycle state from a single API call.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 7: WHAT'S NOVEL
+     ═══════════════════════════════════════════════════════════ -->
+<section id="novel" class="section">
+  <div class="eyebrow" style="color:var(--amber)">Prior Art Comparison</div>
+  <h2>What doesn't exist in the current world</h2>
+  <p class="lead">
+    Every column to the right of "Causal5G" represents a capability gap
+    that the patent covers. No existing commercial or research system
+    implements all four together.
+  </p>
+
+  <table class="prior-art-table mt32">
+    <thead>
+      <tr>
+        <th>System</th>
+        <th>Causal root cause (not correlation)</th>
+        <th>Slice-topology attribution</th>
+        <th>Feedback recalibration</th>
+        <th>Bi-level DAG (NF + slice)</th>
+        <th>Confidence-gated closed-loop</th>
+        <th>Open API</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="us">
+        <td>Causal5G <span class="tag tag-accent" style="margin-left:6px">this patent</span></td>
+        <td class="check">✓ Granger + Bayes + centrality</td>
+        <td class="check">✓ SliceEnsembleAttributor</td>
+        <td class="check">✓ GrangerPCFusionRecalibrator</td>
+        <td class="check">✓ Level-1 + Level-2</td>
+        <td class="check">✓ threshold 0.65</td>
+        <td class="check">✓ FastAPI / REST</td>
+      </tr>
+      <tr>
+        <td>Vendor EMS/NMS<br><span style="font-size:10px; color:var(--text-dim)">Nokia, Ericsson, Huawei</span></td>
+        <td class="cross">✗ Threshold alarms</td>
+        <td class="cross">✗ No slice awareness</td>
+        <td class="cross">✗ Static rules</td>
+        <td class="cross">✗ Flat topology view</td>
+        <td class="partial">~ Manual playbooks</td>
+        <td class="partial">~ Proprietary</td>
+      </tr>
+      <tr>
+        <td>Generic AIOps<br><span style="font-size:10px; color:var(--text-dim)">Moogsoft, BigPanda, etc.</span></td>
+        <td class="partial">~ ML ranking, not causal</td>
+        <td class="cross">✗ Network-agnostic</td>
+        <td class="partial">~ Online learning (not DAG)</td>
+        <td class="cross">✗ No DAG structure</td>
+        <td class="partial">~ Threshold-based</td>
+        <td class="check">✓</td>
+      </tr>
+      <tr>
+        <td>O-RAN xApp (rule-based)<br><span style="font-size:10px; color:var(--text-dim)">O-RAN SC, OSC</span></td>
+        <td class="cross">✗ Rule-based only</td>
+        <td class="cross">✗ RAN-focused, not core</td>
+        <td class="cross">✗ No feedback loop</td>
+        <td class="cross">✗ Single domain</td>
+        <td class="partial">~ Manual threshold</td>
+        <td class="check">✓ A1/E2</td>
+      </tr>
+      <tr>
+        <td>Academic RCA<br><span style="font-size:10px; color:var(--text-dim)">CloudRCA, MicroRCA, etc.</span></td>
+        <td class="partial">~ Causal graph (microservices)</td>
+        <td class="cross">✗ Not 5G slice-aware</td>
+        <td class="cross">✗ Offline, no feedback</td>
+        <td class="cross">✗ Single-level</td>
+        <td class="cross">✗ No remediation</td>
+        <td class="cross">✗ Research only</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="grid2 mt24">
+    <div class="card card-accent">
+      <h3>The key gap: slice-topology awareness</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.7">
+        5G SA defines Network Slices as logical end-to-end networks with different NF compositions.
+        A PCF fault in a URLLC slice does not affect an mIoT slice that has no PCF.
+        No existing RCA system is aware of this topology. Causal5G's Level-2 slice sub-DAG is the
+        first published implementation of slice-topology-aware causal attribution.
+      </p>
+    </div>
+    <div class="card card-purple">
+      <h3>The key gap: feedback recalibration</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:8px; line-height:1.7">
+        Existing 5G fault management systems use static rule tables or fixed ML models.
+        Causal5G's recalibrator updates causal edge weights based on whether remediation
+        actually fixed the fault — a genuine closed feedback loop. After 5 successful
+        PCF remediations, the PCF→SMF causal edge is permanently stronger in the DAG.
+        The system improves with each incident.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SECTION 8: LIVE DEMO
+     ═══════════════════════════════════════════════════════════ -->
+<section id="live" class="section">
+  <div class="eyebrow accent">Live Demo</div>
+  <h2>Connect to running API</h2>
+  <p class="lead">
+    Start the API locally and inject faults in real time.
+    The panel below polls <code style="font-size:13px; color:var(--accent)">GET /rca</code>
+    and shows the bi-level attribution response live.
+  </p>
+
+  <div class="card mt32">
+    <div class="api-connect">
+      <input class="api-url-input" id="apiUrl" value="http://localhost:8080" placeholder="http://localhost:8080">
+      <button class="btn btn-primary" onclick="connectApi()">Connect</button>
+      <button class="btn btn-ghost" onclick="disconnectApi()">Disconnect</button>
+      <div class="live-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText" style="color:var(--text-muted)">Not connected</span>
+      </div>
+    </div>
+
+    <div style="font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-bottom:16px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; padding:10px 14px;">
+      # Start the API first:<br>
+      cd ~/causal5g && uvicorn api.frg:app --port 8080 --reload
+    </div>
+
+    <div class="live-rca" id="livePanel">
+      <div class="grid2" style="margin-bottom:20px">
+        <div>
+          <div class="eyebrow mb8">Root cause (Level-1)</div>
+          <div class="rca-big-nf" id="liveNf">—</div>
+          <div class="gap-8 mt8">
+            <span class="tag" id="liveSeverity" style="background:transparent; border-color:var(--border); color:var(--text-muted)">—</span>
+            <span style="font-family:var(--mono); font-size:11px; color:var(--text-muted)" id="liveScore"></span>
+          </div>
+        </div>
+        <div>
+          <div class="eyebrow mb8">Slice attribution (Level-2)</div>
+          <div id="liveSliceBreadth" style="font-family:var(--mono); font-size:28px; font-weight:700; color:var(--accent)">—</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px" id="liveIsolationType">—</div>
+          <div style="margin-top:10px; font-size:11px; color:var(--text-muted)" id="liveSliceAffected"></div>
+        </div>
+      </div>
+
+      <div class="eyebrow mb8">Inject fault scenario</div>
+      <div class="fault-inject-grid" id="faultBtns">
+        <button class="inject-btn" onclick="injectFault('nrf_crash')">nrf_crash</button>
+        <button class="inject-btn" onclick="injectFault('amf_crash')">amf_crash</button>
+        <button class="inject-btn" onclick="injectFault('smf_crash')">smf_crash</button>
+        <button class="inject-btn" onclick="injectFault('pcf_timeout')">pcf_timeout</button>
+        <button class="inject-btn" onclick="injectFault('udm_crash')">udm_crash</button>
+        <button class="inject-btn" onclick="recoverAll()" style="border-color:var(--green); color:var(--green)">↺ recover all</button>
+      </div>
+
+      <div class="eyebrow mt16 mb8">GET /rca — full response</div>
+      <div class="live-json" id="liveJson">Waiting for first analysis cycle...</div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<div style="border-top:1px solid var(--border); padding:24px 40px; text-align:center; font-family:var(--mono); font-size:11px; color:var(--text-dim)">
+  CAUSAL5G · US Provisional Patent Filed March 2026 · Krishna Kumar Gattupalli · All rights reserved
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// Data — embedded from evidence sweeps
+// ═══════════════════════════════════════════════════════════
+const SCENARIOS = {
+  pcf_timeout: {
+    label: "pcf_timeout",
+    nf: "PCF",
+    severity: "CRITICAL",
+    score: 1.0100,
+    category: "Processing Error — Policy Control Failure",
+    evidence: ["PCF unreachable (reachability=0)", "Container paused", "Latency elevated 3.2× baseline"],
+    candidates: [
+      { nf:"pcf", score:1.0100, rank:1 },
+      { nf:"smf", score:0.4218, rank:2 },
+      { nf:"amf", score:0.3871, rank:3 },
+      { nf:"nrf", score:0.3654, rank:4 },
+      { nf:"udm", score:0.2910, rank:5 },
+      { nf:"ausf",score:0.2441, rank:6 },
+      { nf:"nssf",score:0.1823, rank:7 },
+      { nf:"udr", score:0.1204, rank:8 },
+    ]
+  },
+  nrf_crash: {
+    label: "nrf_crash",
+    nf: "NRF",
+    severity: "CRITICAL",
+    score: 1.0100,
+    category: "Communications Alarm — NF Registry Failure",
+    evidence: ["NRF unreachable (reachability=0)", "Container exited", "All downstream NFs cascade"],
+    candidates: [
+      { nf:"nrf", score:1.0100, rank:1 },
+      { nf:"amf", score:0.9100, rank:2 },
+      { nf:"smf", score:0.8730, rank:3 },
+      { nf:"pcf", score:0.8210, rank:4 },
+      { nf:"udm", score:0.7940, rank:5 },
+      { nf:"ausf",score:0.7320, rank:6 },
+      { nf:"nssf",score:0.6890, rank:7 },
+      { nf:"udr", score:0.3210, rank:8 },
+    ]
+  },
+  amf_crash: {
+    label: "amf_crash",
+    nf: "AMF",
+    severity: "CRITICAL",
+    score: 1.0100,
+    category: "Processing Error — Access Management Failure",
+    evidence: ["AMF unreachable (reachability=0)", "Container exited", "UE registration failures"],
+    candidates: [
+      { nf:"amf", score:1.0100, rank:1 },
+      { nf:"ausf",score:0.4512, rank:2 },
+      { nf:"smf", score:0.3981, rank:3 },
+      { nf:"nrf", score:0.3654, rank:4 },
+      { nf:"udm", score:0.2910, rank:5 },
+      { nf:"pcf", score:0.2611, rank:6 },
+      { nf:"nssf",score:0.1823, rank:7 },
+      { nf:"udr", score:0.1204, rank:8 },
+    ]
+  },
+  smf_crash: {
+    label: "smf_crash",
+    nf: "SMF",
+    severity: "CRITICAL",
+    score: 1.0100,
+    category: "Processing Error — Session Management Failure",
+    evidence: ["SMF unreachable (reachability=0)", "Container exited", "PDU sessions terminated"],
+    candidates: [
+      { nf:"smf", score:1.0100, rank:1 },
+      { nf:"pcf", score:0.4218, rank:2 },
+      { nf:"amf", score:0.3871, rank:3 },
+      { nf:"nrf", score:0.3654, rank:4 },
+      { nf:"udm", score:0.2910, rank:5 },
+      { nf:"ausf",score:0.2441, rank:6 },
+      { nf:"nssf",score:0.1823, rank:7 },
+      { nf:"udr", score:0.1204, rank:8 },
+    ]
+  },
+  udm_crash: {
+    label: "udm_crash",
+    nf: "UDM",
+    severity: "CRITICAL",
+    score: 1.0100,
+    category: "Processing Error — Subscriber Data Unavailable",
+    evidence: ["UDM unreachable (reachability=0)", "Container exited", "Authentication failures cascade"],
+    candidates: [
+      { nf:"udm", score:1.0100, rank:1 },
+      { nf:"ausf",score:0.4512, rank:2 },
+      { nf:"amf", score:0.3871, rank:3 },
+      { nf:"nrf", score:0.3654, rank:4 },
+      { nf:"udr", score:0.3210, rank:5 },
+      { nf:"smf", score:0.2910, rank:6 },
+      { nf:"nssf",score:0.1823, rank:7 },
+      { nf:"pcf", score:0.1611, rank:8 },
+    ]
+  },
+};
+
+const SWEEP = [
+  { scenario:"nrf_crash",   nf:"nrf", breadth:1.0000, affected:"3/3", type:"infrastructure-wide", ensemble:1.0000 },
+  { scenario:"amf_crash",   nf:"amf", breadth:1.0000, affected:"3/3", type:"all-slice-nf",        ensemble:1.0000 },
+  { scenario:"smf_crash",   nf:"smf", breadth:1.0000, affected:"3/3", type:"all-slice-nf",        ensemble:1.0000 },
+  { scenario:"pcf_timeout", nf:"pcf", breadth:0.6667, affected:"2/3", type:"slice-isolated",      ensemble:0.8000 },
+  { scenario:"udm_crash",   nf:"udm", breadth:1.0000, affected:"3/3", type:"all-slice-nf",        ensemble:1.0000 },
+];
+
+// ═══════════════════════════════════════════════════════════
+// Alarm storm animation
+// ═══════════════════════════════════════════════════════════
+const ALARM_NFS = ['nrf','amf','smf','pcf','udm','udr','ausf','nssf'];
+const PCF_AFFECTED = ['amf','smf','pcf','udm','ausf','nssf']; // cascade from PCF timeout
+
+let alarmPhase = 0;
+function runAlarmDemo() {
+  const healthy = ALARM_NFS.filter(n => !PCF_AFFECTED.includes(n));
+
+  if (alarmPhase === 0) {
+    // All green
+    ALARM_NFS.forEach(nf => {
+      const el = document.getElementById('alarm-' + nf);
+      el.className = 'alarm-card ok';
+      el.querySelector('.alarm-status').textContent = '✓ healthy';
+      el.querySelector('.alarm-status').style.color = 'var(--green)';
+    });
+    alarmPhase = 1;
+  } else if (alarmPhase === 1) {
+    // PCF fires first
+    const pcfEl = document.getElementById('alarm-pcf');
+    pcfEl.className = 'alarm-card firing';
+    pcfEl.querySelector('.alarm-status').textContent = '⚠ TIMEOUT';
+    pcfEl.querySelector('.alarm-status').style.color = 'var(--red)';
+    alarmPhase = 2;
+  } else if (alarmPhase === 2) {
+    // Cascade fires
+    PCF_AFFECTED.filter(n => n !== 'pcf').forEach(nf => {
+      const el = document.getElementById('alarm-' + nf);
+      el.className = 'alarm-card firing';
+      el.querySelector('.alarm-status').textContent = '⚠ ALARM';
+      el.querySelector('.alarm-status').style.color = 'var(--red)';
+    });
+    // NRF and UDR stay green
+    ['nrf', 'udr'].forEach(nf => {
+      const el = document.getElementById('alarm-' + nf);
+      el.className = 'alarm-card ok';
+      el.querySelector('.alarm-status').textContent = '✓ healthy';
+      el.querySelector('.alarm-status').style.color = 'var(--green)';
+    });
+    alarmPhase = 0;
+  }
+}
+
+setInterval(runAlarmDemo, 2400);
+runAlarmDemo();
+
+// ═══════════════════════════════════════════════════════════
+// Scenario tabs — Level-1
+// ═══════════════════════════════════════════════════════════
+let activeScenario = 'pcf_timeout';
+
+function renderScenarioTabs() {
+  const container = document.getElementById('scenarioTabs');
+  container.innerHTML = Object.keys(SCENARIOS).map(key =>
+    `<button class="scenario-tab ${key === activeScenario ? 'active' : ''}" onclick="selectScenario('${key}')">${key}</button>`
+  ).join('');
+}
+
+function selectScenario(key) {
+  activeScenario = key;
+  renderScenarioTabs();
+  renderLevel1();
+}
+
+function renderLevel1() {
+  const s = SCENARIOS[activeScenario];
+  document.getElementById('l1RcNf').textContent = s.nf;
+  document.getElementById('l1RcNf').className = 'rca-big-nf' + (s.severity === 'CRITICAL' ? ' critical' : '');
+  document.getElementById('l1Score').textContent = `score ${s.score.toFixed(4)}`;
+  document.getElementById('l1Category').textContent = s.category;
+
+  const sevEl = document.getElementById('l1Severity');
+  sevEl.textContent = s.severity;
+  sevEl.className = `tag tag-${s.severity === 'CRITICAL' ? 'red' : s.severity === 'HIGH' ? 'amber' : 'accent'}`;
+
+  const evEl = document.getElementById('l1Evidence');
+  evEl.innerHTML = s.evidence.map(e => `<li>→ ${e}</li>`).join('');
+
+  const candEl = document.getElementById('l1Candidates');
+  const maxScore = s.candidates[0].score;
+  candEl.innerHTML = s.candidates.map(c => {
+    const pct = (c.score / maxScore * 100).toFixed(1);
+    const color = c.rank === 1 ? 'var(--red)' : c.rank === 2 ? 'var(--amber)' : 'var(--accent)';
+    return `<div class="candidate-row">
+      <span class="cand-rank">#${c.rank}</span>
+      <span class="cand-nf">${c.nf}</span>
+      <div class="cand-bar-bg"><div class="cand-bar" style="width:${pct}%; background:${color}"></div></div>
+      <span class="cand-score">${c.score.toFixed(4)}</span>
+    </div>`;
+  }).join('');
+}
+
+renderScenarioTabs();
+renderLevel1();
+
+// ═══════════════════════════════════════════════════════════
+// Sweep table
+// ═══════════════════════════════════════════════════════════
+function renderSweepTable() {
+  const tbody = document.getElementById('sweepTable');
+  tbody.innerHTML = SWEEP.map(r => {
+    const isPcf = r.scenario === 'pcf_timeout';
+    const typeTag = r.type === 'infrastructure-wide'
+      ? `<span class="tag tag-red">${r.type}</span>`
+      : r.type === 'slice-isolated'
+      ? `<span class="tag tag-accent">${r.type}</span>`
+      : `<span class="tag tag-amber">${r.type}</span>`;
+
+    return `<tr style="${isPcf ? 'background:rgba(0,200,255,0.04)' : ''}">
+      <td style="font-family:var(--mono); font-size:11px; ${isPcf ? 'color:var(--accent); font-weight:600' : ''}">${r.scenario}${isPcf ? ' ★' : ''}</td>
+      <td style="font-family:var(--mono); font-size:11px">${r.nf.toUpperCase()}</td>
+      <td style="font-family:var(--mono); font-size:11px; color:var(--text-muted)">${r.affected}</td>
+      <td>
+        <div style="display:flex; align-items:center; gap:8px">
+          <div style="flex:1; height:4px; background:var(--border); border-radius:2px; max-width:80px">
+            <div style="height:100%; width:${r.breadth*100}%; background:${r.breadth<1 ? 'var(--accent)' : 'var(--red)'}; border-radius:2px"></div>
+          </div>
+          <span style="font-family:var(--mono); font-size:11px; color:${r.breadth<1 ? 'var(--accent)' : 'var(--red)'}">${r.breadth.toFixed(4)}</span>
+        </div>
+      </td>
+      <td>${typeTag}</td>
+      <td style="font-family:var(--mono); font-size:11px; color:${r.ensemble<1 ? 'var(--accent)' : 'var(--text-muted)'}">${r.ensemble.toFixed(4)}</td>
+    </tr>`;
+  }).join('');
+}
+renderSweepTable();
+
+// ═══════════════════════════════════════════════════════════
+// Live API
+// ═══════════════════════════════════════════════════════════
+let pollInterval = null;
+let apiBase = 'http://localhost:8080';
+
+function connectApi() {
+  apiBase = document.getElementById('apiUrl').value.replace(/\/$/, '');
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = 'Connecting...';
+  document.getElementById('statusText').style.color = 'var(--text-muted)';
+  pollRca();
+  if (!pollInterval) pollInterval = setInterval(pollRca, 5000);
+}
+
+function disconnectApi() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  document.getElementById('statusDot').className = 'status-dot';
+  document.getElementById('statusText').textContent = 'Not connected';
+  document.getElementById('statusText').style.color = 'var(--text-muted)';
+  document.getElementById('livePanel').classList.remove('visible');
+}
+
+async function pollRca() {
+  try {
+    const r = await fetch(`${apiBase}/rca`, { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+
+    document.getElementById('statusDot').className = 'status-dot connected';
+    document.getElementById('statusText').textContent = 'Live';
+    document.getElementById('statusText').style.color = 'var(--green)';
+    document.getElementById('livePanel').classList.add('visible');
+
+    if (data.status === 'collecting') {
+      document.getElementById('liveNf').textContent = '...';
+      document.getElementById('liveNf').className = 'rca-big-nf';
+      document.getElementById('liveSliceBreadth').textContent = '—';
+      document.getElementById('liveIsolationType').textContent = data.message || 'Collecting...';
+      document.getElementById('liveScore').textContent = `buffer ${Math.round(data.buffer_fill_pct || 0)}%`;
+      document.getElementById('liveSliceAffected').textContent = '';
+      document.getElementById('liveJson').innerHTML = renderJson(data);
+      return;
+    }
+
+    const rep = data.report || {};
+    const rc = rep.root_cause || {};
+    const sa = rep.slice_attribution || null;
+
+    const nf = (rc.nf_id || '—').toUpperCase();
+    const nfEl = document.getElementById('liveNf');
+    nfEl.textContent = nf;
+    nfEl.className = 'rca-big-nf' + (rep.severity === 'CRITICAL' ? ' critical' : '');
+
+    const sev = rep.severity || '—';
+    const sevEl = document.getElementById('liveSeverity');
+    sevEl.textContent = sev;
+    sevEl.className = `tag tag-${sev === 'CRITICAL' ? 'red' : sev === 'HIGH' ? 'amber' : 'accent'}`;
+    document.getElementById('liveScore').textContent = `score ${(rc.composite_score || 0).toFixed(4)}`;
+
+    if (sa) {
+      const breadthEl = document.getElementById('liveSliceBreadth');
+      breadthEl.textContent = sa.slice_breadth.toFixed(4);
+      const isIsolated = sa.isolation_type === 'slice-isolated';
+      breadthEl.style.color = isIsolated ? 'var(--accent)' : 'var(--red)';
+      document.getElementById('liveIsolationType').innerHTML =
+        `<span class="tag ${isIsolated ? 'tag-accent' : 'tag-red'}">${sa.isolation_type}</span>`;
+      document.getElementById('liveSliceAffected').textContent =
+        `${sa.n_slices_affected} / ${sa.n_slices_total} slices affected`;
+    } else {
+      document.getElementById('liveSliceBreadth').textContent = '—';
+      document.getElementById('liveIsolationType').textContent = 'No slice attribution yet';
+      document.getElementById('liveSliceAffected').textContent = '';
+    }
+
+    document.getElementById('liveJson').innerHTML = renderJson({
+      root_cause: { nf_id: rc.nf_id, composite_score: rc.composite_score, confidence: rc.confidence },
+      severity: rep.severity,
+      slice_attribution: sa ? {
+        slice_breadth: sa.slice_breadth,
+        isolation_type: sa.isolation_type,
+        n_slices_affected: sa.n_slices_affected,
+        n_slices_total: sa.n_slices_total,
+        ensemble_score: sa.ensemble_score,
+      } : null,
+      recalibration_snapshot: rep.recalibration_snapshot ? {
+        cycle_count: rep.recalibration_snapshot.cycle_count,
+        edges_tracked: rep.recalibration_snapshot.edges_tracked,
+        reinforced_edges: rep.recalibration_snapshot.reinforced_edges,
+      } : null,
+      active_injections: data.active_injections,
+    });
+
+  } catch (err) {
+    document.getElementById('statusDot').className = 'status-dot error';
+    document.getElementById('statusText').textContent = err.message.includes('aborted') ? 'Timeout' : 'Unreachable';
+    document.getElementById('statusText').style.color = 'var(--red)';
+  }
+}
+
+function renderJson(obj, indent = 0) {
+  if (obj === null) return '<span class="val-null">null</span>';
+  if (typeof obj === 'boolean') return `<span class="val-num">${obj}</span>`;
+  if (typeof obj === 'number') return `<span class="val-num">${obj}</span>`;
+  if (typeof obj === 'string') {
+    const cls = obj === 'slice-isolated' ? 'val-isolated'
+              : obj === 'infrastructure-wide' ? 'val-infra'
+              : obj === 'all-slice-nf' ? 'val-isolated'
+              : 'val-str';
+    return `<span class="${cls}">"${obj}"</span>`;
+  }
+  if (Array.isArray(obj)) {
+    if (!obj.length) return '[]';
+    const items = obj.map(v => '  '.repeat(indent+1) + renderJson(v, indent+1)).join(',\n');
+    return `[\n${items}\n${'  '.repeat(indent)}]`;
+  }
+  const entries = Object.entries(obj);
+  if (!entries.length) return '{}';
+  const lines = entries.map(([k, v]) =>
+    `${'  '.repeat(indent+1)}<span class="key">"${k}"</span>: ${renderJson(v, indent+1)}`
+  ).join(',\n');
+  return `{\n${lines}\n${'  '.repeat(indent)}}`;
+}
+
+async function injectFault(scenario) {
+  try {
+    document.querySelectorAll('.inject-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    const r = await fetch(`${apiBase}/faults/inject/${scenario}`, { method: 'POST' });
+    if (!r.ok) {
+      const err = await r.json();
+      alert(err.detail || 'Injection failed');
+      event.target.classList.remove('active');
+    }
+  } catch(e) {
+    alert('API not reachable — start the server first');
+    event.target.classList.remove('active');
+  }
+}
+
+async function recoverAll() {
+  const scenarios = ['nrf_crash','amf_crash','smf_crash','pcf_timeout','udm_crash'];
+  document.querySelectorAll('.inject-btn').forEach(b => b.classList.remove('active'));
+  for (const s of scenarios) {
+    try { await fetch(`${apiBase}/faults/recover/${s}`, { method: 'POST' }); } catch(e) {}
+  }
+}
+
+// Hide scroll hint on scroll
+window.addEventListener('scroll', () => {
+  const hint = document.querySelector('.scroll-hint');
+  if (hint) hint.style.opacity = window.scrollY > 100 ? '0' : '1';
+}, { passive: true });
+</script>
+</body>
+</html>
