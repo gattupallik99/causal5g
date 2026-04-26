@@ -34,6 +34,7 @@ from causal.graph.dcgm import DynamicCausalGraphManager
 from causal.engine.rcsm import RootCauseScoringModule, FaultReport
 from faults.injector import FaultInjector
 from causal5g.observability import metrics as _metrics  # Day 15
+from causal5g.causal.slice_ensemble import SliceEnsembleAttributor  # Day 19
 
 
 def _to_py(x):
@@ -59,6 +60,7 @@ class PipelineState:
         self.dcgm = DynamicCausalGraphManager()
         self.rcsm = RootCauseScoringModule()
         self.injector = FaultInjector()
+        self.sea = SliceEnsembleAttributor()       # Day 19: Level-2 slice attributor
 
         self.latest_report: Optional[FaultReport] = None
         self.report_history: list[FaultReport] = []
@@ -120,6 +122,28 @@ def pipeline_loop():
                 state.dcgm.update_from_granger(result)
                 candidates = state.rcsm.score(result, state.dcgm, state.buffer)
                 report = state.rcsm.generate_report(candidates, state.buffer, result)
+
+                # Day 19: Level-2 slice-layer attribution.
+                # Skip for INFO reports (root_cause.nf_id == "none") — no
+                # real NF to attribute.  For all genuine attributions, run
+                # SliceEnsembleAttributor and attach the result dict so every
+                # downstream consumer (report_to_dict, /rca, /faults/active)
+                # sees slice_breadth + isolation_type alongside the NF score.
+                if report.root_cause.nf_id != "none":
+                    try:
+                        slice_attr = state.sea.attribute(
+                            root_cause_nf=report.root_cause.nf_id,
+                            nf_layer_score=report.root_cause.composite_score,
+                        )
+                        report.slice_attribution = slice_attr.to_dict()
+                        logger.info(
+                            f"Level-2 | nf={report.root_cause.nf_id} | "
+                            f"breadth={slice_attr.slice_breadth:.4f} | "
+                            f"type={slice_attr.isolation_type} | "
+                            f"ensemble={slice_attr.ensemble_score:.4f}"
+                        )
+                    except Exception as _sea_exc:
+                        logger.warning(f"SliceEnsembleAttributor failed: {_sea_exc}")
 
                 state.candidates = candidates
                 state.latest_report = report
@@ -243,6 +267,38 @@ def report_to_dict(report: FaultReport) -> dict:
             }
             for c in report.candidates
         ],
+        # Day 19: Level-2 slice-layer attribution (None on INFO reports)
+        "slice_attribution": report.slice_attribution,
+    }
+
+
+# ── RCA endpoint (Day 19) ────────────────────────────────────
+# Returns the latest FaultReport including Level-2 slice attribution.
+# This is the primary verification target for the live end-to-end sweep.
+
+@app.get("/rca", tags=["Fault Reports"])
+async def get_rca():
+    """
+    Latest root-cause analysis report including Level-2 slice attribution.
+    Patent Claim 1: bi-level DAG output (NF layer + slice layer).
+
+    After injecting a fault, poll this endpoint to confirm:
+      - root_cause.nf_id  — Level-1 NF identification
+      - slice_attribution.slice_breadth    — fraction of slices affected
+      - slice_attribution.isolation_type   — slice-isolated | all-slice-nf | infrastructure-wide
+      - slice_attribution.ensemble_score   — fused bi-level score
+    """
+    if not state.latest_report:
+        return {
+            "status": "collecting",
+            "message": "No analysis complete yet — pipeline still warming up.",
+            "buffer_fill_pct": round(state.buffer.fill_pct, 1),
+            "cycle_count": state.cycle_count,
+        }
+    return {
+        "status": "ok",
+        "active_injections": state.injector.active_faults,
+        "report": report_to_dict(state.latest_report),
     }
 
 

@@ -53,6 +53,9 @@ class FaultReport:
     Complete fault isolation report.
     Patent Claim 1(h): generating a fault report identifying root cause.
     Maps to 3GPP TS 32.111 fault categories.
+
+    Day 19: `slice_attribution` carries the Level-2 (slice sub-DAG) result
+    from SliceEnsembleAttributor. None until the pipeline wires Level-2 in.
     """
     report_id: str
     timestamp: str
@@ -65,6 +68,8 @@ class FaultReport:
     recommended_action: str
     detection_latency_ms: float
     telemetry_window_cycles: int
+    # Day 19: Level-2 slice-layer attribution (optional — absent on INFO reports)
+    slice_attribution: Optional[dict] = None
 
 
 # 3GPP TS 32.111 fault categories

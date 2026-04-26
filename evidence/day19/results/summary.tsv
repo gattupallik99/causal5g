@@ -1,0 +1,6 @@
+scenario	nf	nf_layer_score	slice_breadth	n_affected	n_total	isolation_type	ensemble_score
+nrf_crash	nrf	1.0100	1.0000	3	3	infrastructure-wide	1.0000
+amf_crash	amf	1.0100	1.0000	3	3	all-slice-nf	1.0000
+smf_crash	smf	1.0100	1.0000	3	3	all-slice-nf	1.0000
+pcf_timeout	pcf	1.0100	0.6667	2	3	slice-isolated	0.8000
+udm_crash	udm	1.0100	1.0000	3	3	all-slice-nf	1.0000

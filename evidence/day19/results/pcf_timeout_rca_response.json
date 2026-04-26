@@ -1,0 +1,79 @@
+{
+  "report_id": "FR-PCF-DAY19",
+  "timestamp": "2026-04-26T14:22:40.146148+00:00",
+  "severity": "CRITICAL",
+  "fault_category": "Processing Error - Policy Control Failure",
+  "affected_nfs": [
+    "pcf"
+  ],
+  "causal_chain": [
+    "pcf"
+  ],
+  "recommended_action": "Restart PCF",
+  "telemetry_window_cycles": 60,
+  "root_cause": {
+    "nf_id": "pcf",
+    "nf_type": "PCF",
+    "rank": 1,
+    "composite_score": 1.01,
+    "centrality_score": 0.5,
+    "temporal_score": 0.3,
+    "bayesian_score": 0.4,
+    "confidence": 1.0,
+    "fault_category": "Processing Error - Policy Control Failure",
+    "evidence": [
+      "PCF unreachable (reachability=0)",
+      "Container exited"
+    ],
+    "causal_path": [
+      "pcf"
+    ]
+  },
+  "all_candidates": [
+    {
+      "nf_id": "pcf",
+      "rank": 1,
+      "composite_score": 1.01,
+      "centrality_score": 0.5,
+      "temporal_score": 0.3,
+      "bayesian_score": 0.4,
+      "confidence": 1.0
+    }
+  ],
+  "slice_attribution": {
+    "root_cause_nf": "pcf",
+    "nf_layer_score": 1.01,
+    "per_slice": [
+      {
+        "slice_id": "1-000001",
+        "label": "eMBB",
+        "nf_present": true,
+        "path_weight": 7.0,
+        "node_count": 7,
+        "edge_count": 10
+      },
+      {
+        "slice_id": "2-000001",
+        "label": "URLLC",
+        "nf_present": true,
+        "path_weight": 7.0,
+        "node_count": 7,
+        "edge_count": 10
+      },
+      {
+        "slice_id": "3-000001",
+        "label": "mIoT",
+        "nf_present": false,
+        "path_weight": 0.0,
+        "node_count": 1,
+        "edge_count": 0
+      }
+    ],
+    "n_slices_total": 3,
+    "n_slices_affected": 2,
+    "slice_breadth": 0.6667,
+    "slice_discriminant": 0.3333,
+    "isolation_type": "slice-isolated",
+    "ensemble_score": 0.8
+  }
+}

@@ -1,0 +1,617 @@
+[
+  {
+    "scenario": "nrf_crash",
+    "nf": "nrf",
+    "nf_layer_score": 1.01,
+    "report_id": "FR-NRF-DAY19",
+    "timestamp": "2026-04-26T14:22:40.145939+00:00",
+    "severity": "CRITICAL",
+    "slice_attribution": {
+      "root_cause_nf": "nrf",
+      "nf_layer_score": 1.01,
+      "per_slice": [
+        {
+          "slice_id": "1-000001",
+          "label": "eMBB",
+          "nf_present": true,
+          "path_weight": 0.0,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "slice_id": "2-000001",
+          "label": "URLLC",
+          "nf_present": true,
+          "path_weight": 0.0,
+          "node_count": 1,
+          "edge_count": 0
+        },
+        {
+          "slice_id": "3-000001",
+          "label": "mIoT",
+          "nf_present": true,
+          "path_weight": 0.0,
+          "node_count": 1,
+          "edge_count": 0
+        }
+      ],
+      "n_slices_total": 3,
+      "n_slices_affected": 3,
+      "slice_breadth": 1.0,
+      "slice_discriminant": 1.0,
+      "isolation_type": "infrastructure-wide",
+      "ensemble_score": 1.0
+    },
+    "rca_response": {
+      "report_id": "FR-NRF-DAY19",
+      "timestamp": "2026-04-26T14:22:40.145939+00:00",
+      "severity": "CRITICAL",
+      "fault_category": "Communications Alarm - NF Registry Failure",
+      "affected_nfs": [
+        "nrf"
+      ],
+      "causal_chain": [
+        "nrf"
+      ],
+      "recommended_action": "Restart NRF",
+      "telemetry_window_cycles": 60,
+      "root_cause": {
+        "nf_id": "nrf",
+        "nf_type": "NRF",
+        "rank": 1,
+        "composite_score": 1.01,
+        "centrality_score": 0.5,
+        "temporal_score": 0.3,
+        "bayesian_score": 0.4,
+        "confidence": 1.0,
+        "fault_category": "Communications Alarm - NF Registry Failure",
+        "evidence": [
+          "NRF unreachable (reachability=0)",
+          "Container exited"
+        ],
+        "causal_path": [
+          "nrf"
+        ]
+      },
+      "all_candidates": [
+        {
+          "nf_id": "nrf",
+          "rank": 1,
+          "composite_score": 1.01,
+          "centrality_score": 0.5,
+          "temporal_score": 0.3,
+          "bayesian_score": 0.4,
+          "confidence": 1.0
+        }
+      ],
+      "slice_attribution": {
+        "root_cause_nf": "nrf",
+        "nf_layer_score": 1.01,
+        "per_slice": [
+          {
+            "slice_id": "1-000001",
+            "label": "eMBB",
+            "nf_present": true,
+            "path_weight": 0.0,
+            "node_count": 1,
+            "edge_count": 0
+          },
+          {
+            "slice_id": "2-000001",
+            "label": "URLLC",
+            "nf_present": true,
+            "path_weight": 0.0,
+            "node_count": 1,
+            "edge_count": 0
+          },
+          {
+            "slice_id": "3-000001",
+            "label": "mIoT",
+            "nf_present": true,
+            "path_weight": 0.0,
+            "node_count": 1,
+            "edge_count": 0
+          }
+        ],
+        "n_slices_total": 3,
+        "n_slices_affected": 3,
+        "slice_breadth": 1.0,
+        "slice_discriminant": 1.0,
+        "isolation_type": "infrastructure-wide",
+        "ensemble_score": 1.0
+      }
+    }
+  },
+  {
+    "scenario": "amf_crash",
+    "nf": "amf",
+    "nf_layer_score": 1.01,
+    "report_id": "FR-AMF-DAY19",
+    "timestamp": "2026-04-26T14:22:40.146025+00:00",
+    "severity": "CRITICAL",
+    "slice_attribution": {
+      "root_cause_nf": "amf",
+      "nf_layer_score": 1.01,
+      "per_slice": [
+        {
+          "slice_id": "1-000001",
+          "label": "eMBB",
+          "nf_present": true,
+          "path_weight": 3.0,
+          "node_count": 5,
+          "edge_count": 5
+        },
+        {
+          "slice_id": "2-000001",
+          "label": "URLLC",
+          "nf_present": true,
+          "path_weight": 3.0,
+          "node_count": 5,
+          "edge_count": 5
+        },
+        {
+          "slice_id": "3-000001",
+          "label": "mIoT",
+          "nf_present": true,
+          "path_weight": 3.0,
+          "node_count": 5,
+          "edge_count": 5
+        }
+      ],
+      "n_slices_total": 3,
+      "n_slices_affected": 3,
+      "slice_breadth": 1.0,
+      "slice_discriminant": 1.0,
+      "isolation_type": "all-slice-nf",
+      "ensemble_score": 1.0
+    },
+    "rca_response": {
+      "report_id": "FR-AMF-DAY19",
+      "timestamp": "2026-04-26T14:22:40.146025+00:00",
+      "severity": "CRITICAL",
+      "fault_category": "Processing Error - Access Management Failure",
+      "affected_nfs": [
+        "amf"
+      ],
+      "causal_chain": [
+        "amf"
+      ],
+      "recommended_action": "Restart AMF",
+      "telemetry_window_cycles": 60,
+      "root_cause": {
+        "nf_id": "amf",
+        "nf_type": "AMF",
+        "rank": 1,
+        "composite_score": 1.01,
+        "centrality_score": 0.5,
+        "temporal_score": 0.3,
+        "bayesian_score": 0.4,
+        "confidence": 1.0,
+        "fault_category": "Processing Error - Access Management Failure",
+        "evidence": [
+          "AMF unreachable (reachability=0)",
+          "Container exited"
+        ],
+        "causal_path": [
+          "amf"
+        ]
+      },
+      "all_candidates": [
+        {
+          "nf_id": "amf",
+          "rank": 1,
+          "composite_score": 1.01,
+          "centrality_score": 0.5,
+          "temporal_score": 0.3,
+          "bayesian_score": 0.4,
+          "confidence": 1.0
+        }
+      ],
+      "slice_attribution": {
+        "root_cause_nf": "amf",
+        "nf_layer_score": 1.01,
+        "per_slice": [
+          {
+            "slice_id": "1-000001",
+            "label": "eMBB",
+            "nf_present": true,
+            "path_weight": 3.0,
+            "node_count": 5,
+            "edge_count": 5
+          },
+          {
+            "slice_id": "2-000001",
+            "label": "URLLC",
+            "nf_present": true,
+            "path_weight": 3.0,
+            "node_count": 5,
+            "edge_count": 5
+          },
+          {
+            "slice_id": "3-000001",
+            "label": "mIoT",
+            "nf_present": true,
+            "path_weight": 3.0,
+            "node_count": 5,
+            "edge_count": 5
+          }
+        ],
+        "n_slices_total": 3,
+        "n_slices_affected": 3,
+        "slice_breadth": 1.0,
+        "slice_discriminant": 1.0,
+        "isolation_type": "all-slice-nf",
+        "ensemble_score": 1.0
+      }
+    }
+  },
+  {
+    "scenario": "smf_crash",
+    "nf": "smf",
+    "nf_layer_score": 1.01,
+    "report_id": "FR-SMF-DAY19",
+    "timestamp": "2026-04-26T14:22:40.146088+00:00",
+    "severity": "CRITICAL",
+    "slice_attribution": {
+      "root_cause_nf": "smf",
+      "nf_layer_score": 1.01,
+      "per_slice": [
+        {
+          "slice_id": "1-000001",
+          "label": "eMBB",
+          "nf_present": true,
+          "path_weight": 7.0,
+          "node_count": 7,
+          "edge_count": 10
+        },
+        {
+          "slice_id": "2-000001",
+          "label": "URLLC",
+          "nf_present": true,
+          "path_weight": 7.0,
+          "node_count": 7,
+          "edge_count": 10
+        },
+        {
+          "slice_id": "3-000001",
+          "label": "mIoT",
+          "nf_present": true,
+          "path_weight": 4.5,
+          "node_count": 6,
+          "edge_count": 7
+        }
+      ],
+      "n_slices_total": 3,
+      "n_slices_affected": 3,
+      "slice_breadth": 1.0,
+      "slice_discriminant": 1.0,
+      "isolation_type": "all-slice-nf",
+      "ensemble_score": 1.0
+    },
+    "rca_response": {
+      "report_id": "FR-SMF-DAY19",
+      "timestamp": "2026-04-26T14:22:40.146088+00:00",
+      "severity": "CRITICAL",
+      "fault_category": "Processing Error - Session Management Failure",
+      "affected_nfs": [
+        "smf"
+      ],
+      "causal_chain": [
+        "smf"
+      ],
+      "recommended_action": "Restart SMF",
+      "telemetry_window_cycles": 60,
+      "root_cause": {
+        "nf_id": "smf",
+        "nf_type": "SMF",
+        "rank": 1,
+        "composite_score": 1.01,
+        "centrality_score": 0.5,
+        "temporal_score": 0.3,
+        "bayesian_score": 0.4,
+        "confidence": 1.0,
+        "fault_category": "Processing Error - Session Management Failure",
+        "evidence": [
+          "SMF unreachable (reachability=0)",
+          "Container exited"
+        ],
+        "causal_path": [
+          "smf"
+        ]
+      },
+      "all_candidates": [
+        {
+          "nf_id": "smf",
+          "rank": 1,
+          "composite_score": 1.01,
+          "centrality_score": 0.5,
+          "temporal_score": 0.3,
+          "bayesian_score": 0.4,
+          "confidence": 1.0
+        }
+      ],
+      "slice_attribution": {
+        "root_cause_nf": "smf",
+        "nf_layer_score": 1.01,
+        "per_slice": [
+          {
+            "slice_id": "1-000001",
+            "label": "eMBB",
+            "nf_present": true,
+            "path_weight": 7.0,
+            "node_count": 7,
+            "edge_count": 10
+          },
+          {
+            "slice_id": "2-000001",
+            "label": "URLLC",
+            "nf_present": true,
+            "path_weight": 7.0,
+            "node_count": 7,
+            "edge_count": 10
+          },
+          {
+            "slice_id": "3-000001",
+            "label": "mIoT",
+            "nf_present": true,
+            "path_weight": 4.5,
+            "node_count": 6,
+            "edge_count": 7
+          }
+        ],
+        "n_slices_total": 3,
+        "n_slices_affected": 3,
+        "slice_breadth": 1.0,
+        "slice_discriminant": 1.0,
+        "isolation_type": "all-slice-nf",
+        "ensemble_score": 1.0
+      }
+    }
+  },
+  {
+    "scenario": "pcf_timeout",
+    "nf": "pcf",
+    "nf_layer_score": 1.01,
+    "report_id": "FR-PCF-DAY19",
+    "timestamp": "2026-04-26T14:22:40.146148+00:00",
+    "severity": "CRITICAL",
+    "slice_attribution": {
+      "root_cause_nf": "pcf",
+      "nf_layer_score": 1.01,
+      "per_slice": [
+        {
+          "slice_id": "1-000001",
+          "label": "eMBB",
+          "nf_present": true,
+          "path_weight": 7.0,
+          "node_count": 7,
+          "edge_count": 10
+        },
+        {
+          "slice_id": "2-000001",
+          "label": "URLLC",
+          "nf_present": true,
+          "path_weight": 7.0,
+          "node_count": 7,
+          "edge_count": 10
+        },
+        {
+          "slice_id": "3-000001",
+          "label": "mIoT",
+          "nf_present": false,
+          "path_weight": 0.0,
+          "node_count": 1,
+          "edge_count": 0
+        }
+      ],
+      "n_slices_total": 3,
+      "n_slices_affected": 2,
+      "slice_breadth": 0.6667,
+      "slice_discriminant": 0.3333,
+      "isolation_type": "slice-isolated",
+      "ensemble_score": 0.8
+    },
+    "rca_response": {
+      "report_id": "FR-PCF-DAY19",
+      "timestamp": "2026-04-26T14:22:40.146148+00:00",
+      "severity": "CRITICAL",
+      "fault_category": "Processing Error - Policy Control Failure",
+      "affected_nfs": [
+        "pcf"
+      ],
+      "causal_chain": [
+        "pcf"
+      ],
+      "recommended_action": "Restart PCF",
+      "telemetry_window_cycles": 60,
+      "root_cause": {
+        "nf_id": "pcf",
+        "nf_type": "PCF",
+        "rank": 1,
+        "composite_score": 1.01,
+        "centrality_score": 0.5,
+        "temporal_score": 0.3,
+        "bayesian_score": 0.4,
+        "confidence": 1.0,
+        "fault_category": "Processing Error - Policy Control Failure",
+        "evidence": [
+          "PCF unreachable (reachability=0)",
+          "Container exited"
+        ],
+        "causal_path": [
+          "pcf"
+        ]
+      },
+      "all_candidates": [
+        {
+          "nf_id": "pcf",
+          "rank": 1,
+          "composite_score": 1.01,
+          "centrality_score": 0.5,
+          "temporal_score": 0.3,
+          "bayesian_score": 0.4,
+          "confidence": 1.0
+        }
+      ],
+      "slice_attribution": {
+        "root_cause_nf": "pcf",
+        "nf_layer_score": 1.01,
+        "per_slice": [
+          {
+            "slice_id": "1-000001",
+            "label": "eMBB",
+            "nf_present": true,
+            "path_weight": 7.0,
+            "node_count": 7,
+            "edge_count": 10
+          },
+          {
+            "slice_id": "2-000001",
+            "label": "URLLC",
+            "nf_present": true,
+            "path_weight": 7.0,
+            "node_count": 7,
+            "edge_count": 10
+          },
+          {
+            "slice_id": "3-000001",
+            "label": "mIoT",
+            "nf_present": false,
+            "path_weight": 0.0,
+            "node_count": 1,
+            "edge_count": 0
+          }
+        ],
+        "n_slices_total": 3,
+        "n_slices_affected": 2,
+        "slice_breadth": 0.6667,
+        "slice_discriminant": 0.3333,
+        "isolation_type": "slice-isolated",
+        "ensemble_score": 0.8
+      }
+    }
+  },
+  {
+    "scenario": "udm_crash",
+    "nf": "udm",
+    "nf_layer_score": 1.01,
+    "report_id": "FR-UDM-DAY19",
+    "timestamp": "2026-04-26T14:22:40.146200+00:00",
+    "severity": "CRITICAL",
+    "slice_attribution": {
+      "root_cause_nf": "udm",
+      "nf_layer_score": 1.01,
+      "per_slice": [
+        {
+          "slice_id": "1-000001",
+          "label": "eMBB",
+          "nf_present": true,
+          "path_weight": 1.0,
+          "node_count": 3,
+          "edge_count": 2
+        },
+        {
+          "slice_id": "2-000001",
+          "label": "URLLC",
+          "nf_present": true,
+          "path_weight": 1.0,
+          "node_count": 3,
+          "edge_count": 2
+        },
+        {
+          "slice_id": "3-000001",
+          "label": "mIoT",
+          "nf_present": true,
+          "path_weight": 1.0,
+          "node_count": 3,
+          "edge_count": 2
+        }
+      ],
+      "n_slices_total": 3,
+      "n_slices_affected": 3,
+      "slice_breadth": 1.0,
+      "slice_discriminant": 1.0,
+      "isolation_type": "all-slice-nf",
+      "ensemble_score": 1.0
+    },
+    "rca_response": {
+      "report_id": "FR-UDM-DAY19",
+      "timestamp": "2026-04-26T14:22:40.146200+00:00",
+      "severity": "CRITICAL",
+      "fault_category": "Processing Error - Subscriber Data Unavailable",
+      "affected_nfs": [
+        "udm"
+      ],
+      "causal_chain": [
+        "udm"
+      ],
+      "recommended_action": "Restart UDM",
+      "telemetry_window_cycles": 60,
+      "root_cause": {
+        "nf_id": "udm",
+        "nf_type": "UDM",
+        "rank": 1,
+        "composite_score": 1.01,
+        "centrality_score": 0.5,
+        "temporal_score": 0.3,
+        "bayesian_score": 0.4,
+        "confidence": 1.0,
+        "fault_category": "Processing Error - Subscriber Data Unavailable",
+        "evidence": [
+          "UDM unreachable (reachability=0)",
+          "Container exited"
+        ],
+        "causal_path": [
+          "udm"
+        ]
+      },
+      "all_candidates": [
+        {
+          "nf_id": "udm",
+          "rank": 1,
+          "composite_score": 1.01,
+          "centrality_score": 0.5,
+          "temporal_score": 0.3,
+          "bayesian_score": 0.4,
+          "confidence": 1.0
+        }
+      ],
+      "slice_attribution": {
+        "root_cause_nf": "udm",
+        "nf_layer_score": 1.01,
+        "per_slice": [
+          {
+            "slice_id": "1-000001",
+            "label": "eMBB",
+            "nf_present": true,
+            "path_weight": 1.0,
+            "node_count": 3,
+            "edge_count": 2
+          },
+          {
+            "slice_id": "2-000001",
+            "label": "URLLC",
+            "nf_present": true,
+            "path_weight": 1.0,
+            "node_count": 3,
+            "edge_count": 2
+          },
+          {
+            "slice_id": "3-000001",
+            "label": "mIoT",
+            "nf_present": true,
+            "path_weight": 1.0,
+            "node_count": 3,
+            "edge_count": 2
+          }
+        ],
+        "n_slices_total": 3,
+        "n_slices_affected": 3,
+        "slice_breadth": 1.0,
+        "slice_discriminant": 1.0,
+        "isolation_type": "all-slice-nf",
+        "ensemble_score": 1.0
+      }
+    }
+  }
+]

@@ -1,0 +1,6 @@
+scenario	expected_nf	detected_nf	match	nf_layer_score	nf_composite_gap	slice_breadth	n_affected	n_total	isolation_type	slice_discriminant	ensemble_score
+nrf_crash	nrf	nrf	True	1.01	0.01	1.0	3	3	infrastructure-wide	1.0	1.0
+amf_crash	amf	amf	True	1.01	0.01	1.0	3	3	all-slice-nf	1.0	1.0
+smf_crash	smf	smf	True	1.01	0.01	1.0	3	3	all-slice-nf	1.0	1.0
+pcf_timeout	pcf	pcf	True	1.01	0.01	0.6667	2	3	slice-isolated	0.3333	0.8
+udm_crash	udm	udm	True	1.01	0.01	1.0	3	3	all-slice-nf	1.0	1.0

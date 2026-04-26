@@ -1,0 +1,43 @@
+{
+  "scenario": "pcf_timeout",
+  "expected_nf": "pcf",
+  "detected_nf": "pcf",
+  "nf_layer_score": 1.01,
+  "slice_breadth": 0.6667,
+  "n_slices_affected": 2,
+  "n_slices_total": 3,
+  "isolation_type": "slice-isolated",
+  "slice_discriminant": 0.3333,
+  "ensemble_score": 0.8,
+  "match": true,
+  "per_slice": [
+    {
+      "slice_id": "1-000001",
+      "label": "eMBB",
+      "nf_present": true,
+      "path_weight": 7.0,
+      "node_count": 7,
+      "edge_count": 10
+    },
+    {
+      "slice_id": "2-000001",
+      "label": "URLLC",
+      "nf_present": true,
+      "path_weight": 7.0,
+      "node_count": 7,
+      "edge_count": 10
+    },
+    {
+      "slice_id": "3-000001",
+      "label": "mIoT",
+      "nf_present": false,
+      "path_weight": 0.0,
+      "node_count": 1,
+      "edge_count": 0
+    }
+  ],
+  "nf_layer_composite_gap": 0.01,
+  "nf_layer_detect_s": 53,
+  "nf_layer_severity": "CRITICAL",
+  "slice_breadth_gap_vs_max": 0.3333
+}
