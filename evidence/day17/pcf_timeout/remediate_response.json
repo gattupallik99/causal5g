@@ -1,0 +1,1 @@
+{"record_id":"1d32b247","fault_scenario":"pcf_timeout","root_cause_nf":"pcf","rcsm_score":1.0,"action":"rollback_config","target":"pcf","status":"success","outcome_signal":1.0,"latency_ms":151.78,"slice_id":null,"skipped_reason":null}

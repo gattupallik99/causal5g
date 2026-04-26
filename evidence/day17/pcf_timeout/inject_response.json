@@ -1,0 +1,1 @@
+{"status":"injected","scenario":"pcf_timeout","target_nf":"pcf","severity":"MEDIUM","description":"PCF timeout - policy decisions delayed","expected_impact":["smf","amf"],"timestamp":"2026-04-26T13:12:23.147580+00:00","next_analysis_in":"35s","watch":"GET /faults/active to see root cause shift"}

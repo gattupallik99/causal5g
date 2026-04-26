@@ -1,0 +1,75 @@
+# HELP causal5g_telemetry_scrapes_total Total telemetry scrapes per NF.
+# TYPE causal5g_telemetry_scrapes_total counter
+causal5g_telemetry_scrapes_total{nf="nrf"} 9689.0
+causal5g_telemetry_scrapes_total{nf="amf"} 5535.0
+causal5g_telemetry_scrapes_total{nf="smf"} 3025.0
+causal5g_telemetry_scrapes_total{nf="pcf"} 3058.0
+causal5g_telemetry_scrapes_total{nf="udm"} 3003.0
+causal5g_telemetry_scrapes_total{nf="udr"} 3168.0
+causal5g_telemetry_scrapes_total{nf="ausf"} 3168.0
+causal5g_telemetry_scrapes_total{nf="nssf"} 3168.0
+# HELP causal5g_telemetry_scrapes_created Total telemetry scrapes per NF.
+# TYPE causal5g_telemetry_scrapes_created gauge
+causal5g_telemetry_scrapes_created{nf="nrf"} 1.777207292424706e+09
+causal5g_telemetry_scrapes_created{nf="amf"} 1.7772072924248152e+09
+causal5g_telemetry_scrapes_created{nf="smf"} 1.7772072924248672e+09
+causal5g_telemetry_scrapes_created{nf="pcf"} 1.777207292424897e+09
+causal5g_telemetry_scrapes_created{nf="udm"} 1.7772072924249291e+09
+causal5g_telemetry_scrapes_created{nf="udr"} 1.777207292424959e+09
+causal5g_telemetry_scrapes_created{nf="ausf"} 1.7772072924249878e+09
+causal5g_telemetry_scrapes_created{nf="nssf"} 1.777207292425018e+09
+# HELP causal5g_attribution_seconds RCSM scoring latency in seconds.
+# TYPE causal5g_attribution_seconds histogram
+causal5g_attribution_seconds_bucket{le="0.005"} 0.0
+causal5g_attribution_seconds_bucket{le="0.01"} 0.0
+causal5g_attribution_seconds_bucket{le="0.025"} 0.0
+causal5g_attribution_seconds_bucket{le="0.05"} 0.0
+causal5g_attribution_seconds_bucket{le="0.1"} 0.0
+causal5g_attribution_seconds_bucket{le="0.25"} 24.0
+causal5g_attribution_seconds_bucket{le="0.5"} 25.0
+causal5g_attribution_seconds_bucket{le="1.0"} 25.0
+causal5g_attribution_seconds_bucket{le="2.5"} 25.0
+causal5g_attribution_seconds_bucket{le="5.0"} 25.0
+causal5g_attribution_seconds_bucket{le="+Inf"} 25.0
+causal5g_attribution_seconds_count 25.0
+causal5g_attribution_seconds_sum 4.622499665085343
+# HELP causal5g_attribution_seconds_created RCSM scoring latency in seconds.
+# TYPE causal5g_attribution_seconds_created gauge
+causal5g_attribution_seconds_created 1.777207292424564e+09
+# HELP causal5g_composite_score Latest RCSM composite score per NF (0..1).
+# TYPE causal5g_composite_score gauge
+causal5g_composite_score{nf="amf"} 1.0
+causal5g_composite_score{nf="udm"} 1.0
+causal5g_composite_score{nf="nrf"} 1.0
+causal5g_composite_score{nf="ausf"} 0.7218
+causal5g_composite_score{nf="smf"} 1.0
+causal5g_composite_score{nf="nssf"} 0.7963
+causal5g_composite_score{nf="pcf"} 1.0
+causal5g_composite_score{nf="udr"} 0.601
+# HELP causal5g_rca_reports_total Total RCA reports emitted, by severity band.
+# TYPE causal5g_rca_reports_total counter
+causal5g_rca_reports_total{severity="CRITICAL"} 25.0
+# HELP causal5g_rca_reports_created Total RCA reports emitted, by severity band.
+# TYPE causal5g_rca_reports_created gauge
+causal5g_rca_reports_created{severity="CRITICAL"} 1.7772073894057338e+09
+# HELP causal5g_remediation_actions_total Total remediation actions executed, by action and status.
+# TYPE causal5g_remediation_actions_total counter
+# HELP causal5g_remediation_seconds Remediation action duration in seconds.
+# TYPE causal5g_remediation_seconds histogram
+# HELP causal5g_confidence_gate_decisions_total Confidence-gate decisions (executed vs skipped).
+# TYPE causal5g_confidence_gate_decisions_total counter
+# HELP causal5g_pipeline_cycles_total Total pipeline scrape/analyse cycles completed.
+# TYPE causal5g_pipeline_cycles_total gauge
+causal5g_pipeline_cycles_total 264.0
+# HELP causal5g_analyses_total Total RCSM analyses executed.
+# TYPE causal5g_analyses_total gauge
+causal5g_analyses_total 25.0
+# HELP causal5g_events_ingested_total Total telemetry events ingested into the buffer.
+# TYPE causal5g_events_ingested_total gauge
+causal5g_events_ingested_total 33814.0
+# HELP causal5g_buffer_fill_pct Telemetry buffer fill percentage (0..100).
+# TYPE causal5g_buffer_fill_pct gauge
+causal5g_buffer_fill_pct 100.0
+# HELP causal5g_active_faults Number of active fault injections.
+# TYPE causal5g_active_faults gauge
+causal5g_active_faults 0.0

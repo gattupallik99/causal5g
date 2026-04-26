@@ -1,0 +1,1 @@
+{"record_id":"03c40f2c","fault_scenario":"amf_crash","root_cause_nf":"amf","rcsm_score":1.0,"action":"restart_pod","target":"amf","status":"success","outcome_signal":1.0,"latency_ms":100.71,"slice_id":null,"skipped_reason":null}

@@ -1,0 +1,1 @@
+{"record_id":"441fcafb","fault_scenario":"smf_crash","root_cause_nf":"smf","rcsm_score":1.0,"action":"restart_pod","target":"smf","status":"success","outcome_signal":1.0,"latency_ms":101.27,"slice_id":null,"skipped_reason":null}
