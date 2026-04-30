@@ -1,0 +1,105 @@
+<svg viewBox="0 0 680 860" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="680" height="860" fill="white"/>
+  <text x="340" y="28" text-anchor="middle" font-size="13" font-weight="bold">FIG. 3 — METHOD FLOWCHART (CLAIM 1 STEPS)</text>
+
+  <defs>
+    <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="black"/>
+    </marker>
+  </defs>
+
+  <!-- START -->
+  <ellipse cx="340" cy="62" rx="80" ry="24" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="67" text-anchor="middle" font-size="12" font-weight="bold">START</text>
+
+  <!-- Arrow -->
+  <line x1="340" y1="86" x2="340" y2="110" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (a) -->
+  <rect x="130" y="110" width="420" height="60" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="133" text-anchor="middle" font-size="11" font-weight="bold">(a) Receive Multi-Source Telemetry  [MTIE 110]</text>
+  <text x="340" y="152" text-anchor="middle" font-size="10">Container state · KPIs · Inter-NF signals → Ring Buffer</text>
+
+  <line x1="340" y1="170" x2="340" y2="194" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (b) -->
+  <rect x="130" y="194" width="420" height="60" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="217" text-anchor="middle" font-size="11" font-weight="bold">(b) Granger Causality Analysis  [CIE 120]</text>
+  <text x="340" y="236" text-anchor="middle" font-size="10">VAR model → F-statistic → directed edges → First-Level DAG</text>
+
+  <line x1="340" y1="254" x2="340" y2="278" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (c) -->
+  <rect x="130" y="278" width="420" height="60" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="301" text-anchor="middle" font-size="11" font-weight="bold">(c) DAG Pruning  [DCGM 130]</text>
+  <text x="340" y="320" text-anchor="middle" font-size="10">Remove edges below significance threshold → Pruned DAG</text>
+
+  <line x1="340" y1="338" x2="340" y2="362" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (d) -->
+  <rect x="130" y="362" width="420" height="68" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="385" text-anchor="middle" font-size="11" font-weight="bold">(d) Composite Root Cause Scoring  [RCSM 140]</text>
+  <text x="340" y="403" text-anchor="middle" font-size="10">S_i = G_i × C_i × (1 + B_i)</text>
+  <text x="340" y="421" text-anchor="middle" font-size="10">Granger weight · Topology centrality · Infrastructure boost</text>
+
+  <line x1="340" y1="430" x2="340" y2="454" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (e) -->
+  <rect x="130" y="454" width="420" height="52" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="477" text-anchor="middle" font-size="11" font-weight="bold">(e) Identify Candidate Root Cause NF</text>
+  <text x="340" y="495" text-anchor="middle" font-size="10">NF_rc = argmax(S_i)  →  passed to Level-2</text>
+
+  <line x1="340" y1="506" x2="340" y2="530" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (f) -->
+  <rect x="130" y="530" width="420" height="52" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="553" text-anchor="middle" font-size="11" font-weight="bold">(f) Construct Slice Sub-DAGs  [Slice Ensemble 150]</text>
+  <text x="340" y="571" text-anchor="middle" font-size="10">One sub-DAG per slice: eMBB, mIoT, URLLC …</text>
+
+  <line x1="340" y1="582" x2="340" y2="606" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (g) -->
+  <rect x="130" y="606" width="420" height="60" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="629" text-anchor="middle" font-size="11" font-weight="bold">(g) Slice Breadth + Isolation Type</text>
+  <text x="340" y="647" text-anchor="middle" font-size="10">SB = affected slices / all slices  →  slice-isolated | infrastructure-wide</text>
+
+  <line x1="340" y1="666" x2="340" y2="690" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Step (h) -->
+  <rect x="130" y="690" width="420" height="60" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="713" text-anchor="middle" font-size="11" font-weight="bold">(h) Bi-Level Ensemble Attribution Report  [FRG 160]</text>
+  <text x="340" y="731" text-anchor="middle" font-size="10">Fuse S_rc + SB + Isolation Type → JSON report via REST API</text>
+
+  <line x1="340" y1="750" x2="340" y2="774" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+
+  <!-- Confidence gate diamond -->
+  <polygon points="340,774 440,808 340,842 240,808" fill="none" stroke="black" stroke-width="2"/>
+  <text x="340" y="802" text-anchor="middle" font-size="10">S_rc &gt;</text>
+  <text x="340" y="816" text-anchor="middle" font-size="10">threshold?</text>
+
+  <!-- YES → RAE -->
+  <line x1="440" y1="808" x2="560" y2="808" stroke="black" stroke-width="1.5" marker-end="url(#arr3)"/>
+  <text x="475" y="800" font-size="10">YES</text>
+  <rect x="560" y="790" width="100" height="36" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="610" y="806" text-anchor="middle" font-size="10" font-weight="bold">RAE 170</text>
+  <text x="610" y="820" text-anchor="middle" font-size="9">Execute action</text>
+
+  <!-- NO → loop back / log -->
+  <line x1="240" y1="808" x2="90" y2="808" stroke="black" stroke-width="1.5"/>
+  <text x="155" y="800" font-size="10">NO</text>
+  <text x="30" y="812" font-size="9">Log &amp;</text>
+  <text x="30" y="824" font-size="9">await</text>
+
+  <!-- Recalibration arrow: RAE → DCGM (step c) -->
+  <line x1="610" y1="790" x2="610" y2="308" stroke="black" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <line x1="610" y1="308" x2="550" y2="308" stroke="black" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr3)"/>
+  <text x="620" y="560" font-size="9" font-style="italic">recalibration</text>
+  <text x="620" y="572" font-size="9" font-style="italic">(outcome</text>
+  <text x="620" y="584" font-size="9" font-style="italic">telemetry)</text>
+
+  <!-- Cycle loop arrow back to top -->
+  <line x1="90" y1="808" x2="90" y2="150" stroke="black" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <line x1="90" y1="150" x2="130" y2="150" stroke="black" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr3)"/>
+  <text x="30" y="500" font-size="9" font-style="italic">next</text>
+  <text x="30" y="512" font-size="9" font-style="italic">cycle</text>
+</svg>

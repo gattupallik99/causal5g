@@ -1,0 +1,92 @@
+<svg viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <rect width="800" height="540" fill="white"/>
+  <text x="400" y="28" text-anchor="middle" font-size="13" font-weight="bold">FIG. 4 — RECALIBRATION LOOP (DCGM 130 / RAE 170)</text>
+
+  <defs>
+    <marker id="arr4" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="black"/>
+    </marker>
+  </defs>
+
+  <!-- Outer loop boundary -->
+  <rect x="30" y="45" width="740" height="460" rx="8" fill="none" stroke="black" stroke-width="1" stroke-dasharray="8,4"/>
+  <text x="50" y="65" font-size="10" font-style="italic">Continuous Recalibration Loop</text>
+
+  <!-- Step 1: First-Level DAG (initial) -->
+  <rect x="290" y="80" width="220" height="56" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="400" y="102" text-anchor="middle" font-size="11" font-weight="bold">First-Level DAG  (DCGM 130)</text>
+  <text x="400" y="122" text-anchor="middle" font-size="10">Edge weights: w(NF_i → NF_j)</text>
+
+  <line x1="400" y1="136" x2="400" y2="162" stroke="black" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+  <!-- Step 2: RCSM scoring -->
+  <rect x="290" y="162" width="220" height="52" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="400" y="184" text-anchor="middle" font-size="11" font-weight="bold">RCSM 140 Scoring</text>
+  <text x="400" y="202" text-anchor="middle" font-size="10">S_i = G_i × C_i × (1 + B_i)</text>
+
+  <line x1="400" y1="214" x2="400" y2="240" stroke="black" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+  <!-- Step 3: Attribution Report -->
+  <rect x="290" y="240" width="220" height="52" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="400" y="262" text-anchor="middle" font-size="11" font-weight="bold">Bi-Level Report  (FRG 160)</text>
+  <text x="400" y="280" text-anchor="middle" font-size="10">NF_rc · SB · Isolation Type</text>
+
+  <line x1="400" y1="292" x2="400" y2="318" stroke="black" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+  <!-- Step 4: RAE confidence gate diamond -->
+  <polygon points="400,318 500,348 400,378 300,348" fill="none" stroke="black" stroke-width="2"/>
+  <text x="400" y="342" text-anchor="middle" font-size="10">S_rc &gt;</text>
+  <text x="400" y="358" text-anchor="middle" font-size="10">threshold?</text>
+
+  <!-- YES branch -->
+  <line x1="500" y1="348" x2="600" y2="348" stroke="black" stroke-width="1.5" marker-end="url(#arr4)"/>
+  <text x="532" y="340" font-size="10">YES</text>
+  <rect x="600" y="324" width="150" height="48" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="675" y="344" text-anchor="middle" font-size="11" font-weight="bold">RAE 170</text>
+  <text x="675" y="362" text-anchor="middle" font-size="10">Execute remediation</text>
+
+  <!-- NO branch -->
+  <line x1="300" y1="348" x2="70" y2="348" stroke="black" stroke-width="1.5"/>
+  <text x="185" y="340" font-size="10">NO — defer</text>
+  <text x="55" y="355" font-size="9" font-style="italic">log report</text>
+
+  <!-- Step 5: Observe outcome -->
+  <line x1="675" y1="372" x2="675" y2="420" stroke="black" stroke-width="1.5" marker-end="url(#arr4)"/>
+  <rect x="590" y="420" width="170" height="52" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="675" y="442" text-anchor="middle" font-size="11" font-weight="bold">Observe Outcome</text>
+  <text x="675" y="460" text-anchor="middle" font-size="10">KPI recovery · Container state</text>
+
+  <!-- Step 6: Edge weight update decision -->
+  <line x1="590" y1="446" x2="510" y2="446" stroke="black" stroke-width="1.5" marker-end="url(#arr4)"/>
+
+  <rect x="360" y="422" width="150" height="52" rx="4" fill="none" stroke="black" stroke-width="2"/>
+  <text x="435" y="444" text-anchor="middle" font-size="10" font-weight="bold">KPIs improved?</text>
+
+  <!-- YES → reinforce -->
+  <line x1="435" y1="422" x2="285" y2="392" stroke="black" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="300" y="410" font-size="9">YES → reinforce</text>
+  <text x="300" y="422" font-size="9">w(NF_i → NF_j) ↑</text>
+
+  <!-- NO → attenuate -->
+  <line x1="360" y1="448" x2="270" y2="448" stroke="black" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="200" y="443" font-size="9">NO → attenuate</text>
+  <text x="200" y="456" font-size="9">w(NF_i → NF_j) ↓</text>
+
+  <!-- Feedback: reinforce/attenuate → DCGM (top) -->
+  <line x1="285" y1="400" x2="100" y2="400" stroke="black" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <line x1="100" y1="400" x2="100" y2="108" stroke="black" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <line x1="100" y1="108" x2="290" y2="108" stroke="black" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr4)"/>
+  <text x="50" y="260" font-size="9" font-style="italic">recalibrated</text>
+  <text x="50" y="272" font-size="9" font-style="italic">edge weights</text>
+  <text x="50" y="284" font-size="9" font-style="italic">→ DCGM 130</text>
+
+  <!-- Next cycle annotation -->
+  <text x="200" y="500" font-size="9" font-style="italic">After edge-weight update, next pipeline cycle begins from updated First-Level DAG (top)</text>
+
+  <!-- Legend box -->
+  <rect x="30" y="488" width="200" height="40" fill="none" stroke="black" stroke-width="1"/>
+  <line x1="45" y1="505" x2="85" y2="505" stroke="black" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="95" y="509" font-size="9">= recalibration feedback path</text>
+  <line x1="45" y1="520" x2="85" y2="520" stroke="black" stroke-width="2"/>
+  <text x="95" y="524" font-size="9">= primary attribution path</text>
+</svg>

@@ -2084,3 +2084,86 @@ inject fault
 - **Non-provisional prep:** all four claims have live demonstration + test
   coverage. Priority shifts to counsel prep — figure refinement, claim language
   review, continuation-in-part scoping for Days 12–20 material.
+
+---
+
+## Day 19+ / April 30, 2026 — Non-Provisional Patent Draft + Provisional Record Committed
+
+### Session Summary
+
+Full non-provisional patent application drafted and all provisional filing documents
+committed to repository under `patent/` directory.
+
+### Provisional Filing Confirmed
+
+Application successfully filed on **March 24, 2026**.
+
+| Field | Value |
+|---|---|
+| Application # | 64/015,070 |
+| Patent Center # | 74984861 |
+| Confirmation # | 5282 |
+| Filing Date | March 24, 2026 08:09:29 AM ET |
+| Fee | $65.00 (Micro Entity, Fee Code 3005) |
+| Status | Application Undergoing Preexam Processing (normal for provisionals) |
+| Non-Provisional Deadline | **March 24, 2027** |
+| PCT Deadline | **March 24, 2027** |
+
+Documents filed with provisional:
+- `Specification.pdf` (signed) — 9 sections, 6 claims, prior art table, abstract
+- `Specification_unsigned.pdf`
+- `Specification.docx`
+- `Causal5G_Patent_Drawings.pdf` — provisional drawings (Figs 1A, 1B, 2, 3, 4, 5)
+- `N417.PYMT.pdf` — USPTO electronic payment receipt
+
+### Non-Provisional Draft Created (patent/non-provisional/)
+
+**File**: `Causal5G_NonProvisional_Patent_DRAFT.docx`
+
+Sections:
+- Title, Cross-Reference (citing 64/015,070), Field, Background, Summary
+- Brief Description of Drawings (5 figures)
+- Detailed Description (9 subsections, canonical discrimination table)
+- 15 Claims (3 independent: method, system, CRM)
+- Abstract
+
+Claims structure:
+- Claims 1, 2, 3, 4, 5, 6, 13, 14, 15 — method claims
+- Claims 7, 8, 9, 10 — system claims
+- Claims 11, 12 — computer-readable medium claims
+
+Key inventive claim elements documented:
+- Bi-level causal DAG (Level-1 NF-layer RCSM + Level-2 SliceEnsembleAttributor)
+- Composite score: S_i = G_i × C_i × (1 + B_i)
+- Slice breadth metric: SB = affected_slices / all_slices
+- Isolation type: slice-isolated (SB < 1.0) vs infrastructure-wide (SB = 1.0)
+- Confidence-gated RAE with recalibration loop
+- Canonical proof: pcf_timeout SB=0.667 vs nrf_crash SB=1.000
+
+### USPTO-Style Patent Drawings Created (patent/non-provisional/figures/)
+
+| File | Content |
+|---|---|
+| FIG1_System_Architecture.svg | Full system block diagram (MTIE→CIE→DCGM→RCSM→SliceEns→FRG→RAE) |
+| FIG2_BiLevel_DAG.svg | Bi-level DAG: Level-1 NF nodes + Level-2 eMBB/mIoT/URLLC sub-DAGs |
+| FIG3_Method_Flowchart.svg | Steps (a)–(h) of Claim 1 with recalibration feedback loop |
+| FIG4_Recalibration_Loop.svg | DCGM recalibration: reinforce/attenuate edge weights from RAE outcomes |
+
+### Claim Status
+
+| Claim | Status | Evidence |
+|---|---|---|
+| 1 — Bi-level causal DAG | ✅ Reduced to practice | Day 17+18, slice_ensemble.py |
+| 2 — Multi-source telemetry | ✅ Reduced to practice | Day 9–11, rcsm.py |
+| 3 — Recalibration/RAE | ✅ Reduced to practice | Day 11–17, frg.py |
+| 4 — Composite scoring | ✅ Reduced to practice | Day 11–12, S_i formula |
+
+### Next Steps Before Non-Provisional Filing (deadline March 24, 2027)
+
+1. Watch for USPTO Filing Receipt in Patent Center → Documents tab
+2. Decide: US-only non-provisional vs. PCT (international) — same deadline
+3. Update non-provisional spec with full 3GPP terminology from provisional
+   (S-NSSAI, PFCP N4, SBI HTTP/2, PCMCI, four-domain hierarchy, O-RAN)
+4. Convert SVG figures to USPTO .tiff format (300 DPI, black & white)
+5. Attorney review of final claim language
+6. File non-provisional by January 2027 (buffer before March deadline)
